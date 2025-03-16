@@ -526,6 +526,12 @@
             }
         ];
 
+        // Helper function to create a safe ID from a string
+        function createSafeId(text, suffix = '') {
+            // Replace special characters that would make invalid selectors
+            return 'med-' + text.replace(/[^a-zA-Z0-9]/g, '_') + suffix;
+        }
+
         // Initialize the app
         function init() {
             console.log("Initializing app");
@@ -545,25 +551,6 @@
 
             // Check for new day
             checkForNewDay();
-        }
-
-        // Check if it's a new day
-        function checkForNewDay() {
-            const lastDateStr = localStorage.getItem('lastDate');
-            const today = new Date().toDateString();
-
-            if (lastDateStr !== today) {
-                // It's a new day
-                localStorage.setItem('lastDate', today);
-
-                // Reset the view to today
-                selectedDate = new Date();
-                showDate();
-                renderMedicationList();
-
-                // Show toast message
-                showToast('New day started - ready to track medications!');
-            }
         }
 
         // Set up event listeners
@@ -678,9 +665,9 @@
                     const stored = localStorage.getItem('taken_' + dateString);
                     if (stored) {
                         const takenMeds = JSON.parse(stored);
-                        info += "- Medications tracked today: " + Object.keys(takenMeds).length + "\n";
+                        info += "- Medications tracked on selected date: " + Object.keys(takenMeds).length + "\n";
                     } else {
-                        info += "- Medications tracked today: None\n";
+                        info += "- Medications tracked on selected date: None\n";
                     }
                 } catch (e) {
                     info += "- localStorage error: " + e.message + "\n";
@@ -786,15 +773,22 @@
                     const medicationElement = document.createElement('div');
                     medicationElement.className = 'medication';
 
-                    const medicationId = `${timeSlotData.timeSlot}-${med.name}-${dateString}`;
-                    const isTaken = takenMedications[medicationId] === true;
+                    // Create a safe ID for the medication
+                    const timeSlotId = createSafeId(timeSlotData.timeSlot);
+                    const medId = createSafeId(med.name);
+                    const elementId = `${timeSlotId}-${medId}-${dateString}`;
+
+                    // Create a storage key that includes the original time and medication name
+                    const storageKey = `${timeSlotData.timeSlot}-${med.name}-${dateString}`;
+
+                    const isTaken = takenMedications[storageKey] === true;
 
                     if (isTaken) {
                         medicationElement.classList.add('completed');
                     }
 
                     medicationElement.innerHTML = `
-                        <input type="checkbox" class="medication-checkbox" id="${medicationId}" ${isTaken ? 'checked' : ''}>
+                        <input type="checkbox" class="medication-checkbox" id="${elementId}" ${isTaken ? 'checked' : ''}>
                         <div class="medication-info">
                             <div class="medication-name">${med.name}</div>
                             ${med.instructions ? `<div class="medication-instructions">${med.instructions}</div>` : ''}
@@ -804,18 +798,18 @@
                     timeSlotContent.appendChild(medicationElement);
 
                     // Add event listeners
-                    const checkbox = medicationElement.querySelector(`#${medicationId}`);
+                    const checkbox = medicationElement.querySelector(`#${elementId}`);
                     const medInfo = medicationElement.querySelector('.medication-info');
 
                     // Make medication row clickable
                     medInfo.addEventListener('click', function() {
                         checkbox.checked = !checkbox.checked;
-                        handleMedicationChange(checkbox, medicationId, med.name, medicationElement);
+                        handleMedicationChange(checkbox, storageKey, med.name, medicationElement);
                     });
 
                     // Handle checkbox change
                     checkbox.addEventListener('change', function() {
-                        handleMedicationChange(this, medicationId, med.name, medicationElement);
+                        handleMedicationChange(this, storageKey, med.name, medicationElement);
                     });
                 });
 
@@ -825,10 +819,10 @@
         }
 
         // Handle medication checkbox changes
-        function handleMedicationChange(checkbox, medicationId, medicationName, element) {
+        function handleMedicationChange(checkbox, storageKey, medicationName, element) {
             try {
-                // Get the date string from the medicationId
-                const parts = medicationId.split('-');
+                // Extract date string from storage key
+                const parts = storageKey.split('-');
                 const dateString = parts[parts.length - 1];
 
                 // Get stored data for this date
@@ -839,7 +833,7 @@
                 }
 
                 // Update data
-                takenMedications[medicationId] = checkbox.checked;
+                takenMedications[storageKey] = checkbox.checked;
                 localStorage.setItem('taken_' + dateString, JSON.stringify(takenMedications));
 
                 // Update UI
@@ -895,8 +889,8 @@
             medicationData.forEach(timeSlot => {
                 timeSlot.medications.forEach(med => {
                     totalMeds++;
-                    const medId = `${timeSlot.timeSlot}-${med.name}-${todayString}`;
-                    if (todayTakenMeds[medId]) {
+                    const storageKey = `${timeSlot.timeSlot}-${med.name}-${todayString}`;
+                    if (todayTakenMeds[storageKey]) {
                         takenMeds++;
                     }
                 });
@@ -944,7 +938,7 @@
                 // Check each medication for this day
                 medicationData.forEach(timeSlot => {
                     timeSlot.medications.forEach(med => {
-                        const medId = `${timeSlot.timeSlot}-${med.name}-${dateString}`;
+                        const storageKey = `${timeSlot.timeSlot}-${med.name}-${dateString}`;
                         const medKey = `${timeSlot.timeSlot}-${med.name}`;
 
                         // Initialize counter if needed
@@ -954,7 +948,7 @@
 
                         missedMedsCount[medKey].total++;
 
-                        if (!dateTakenMeds[medId]) {
+                        if (!dateTakenMeds[storageKey]) {
                             missedMedsCount[medKey].missed++;
                         }
                     });
@@ -985,3 +979,4 @@
                 li.textContent = 'No missed medications data yet';
                 missedMedications.appendChild(li);
             }
+        }

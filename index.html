@@ -127,6 +127,7 @@
             border-radius: 4px;
             cursor: pointer;
             margin-right: 10px;
+            margin-bottom: 10px;
         }
         .btn-success {
             background: #34a853;
@@ -173,6 +174,11 @@
         <input type="file" id="excel-file" class="file-input" accept=".xlsx, .xls">
         <button id="load-default" class="btn">Load Default Schedule</button>
         <button id="download-template" class="btn btn-success">Download Template</button>
+
+        <!-- New Data Management Section -->
+        <hr style="margin: 15px 0; border-top: 1px solid #ddd;">
+        <h3>Data Management</h3>
+        <button id="clear-all-data" class="btn btn-danger">Clear All App Data</button>
     </div>
 
     <div class="date-nav">
@@ -285,6 +291,7 @@
         const debugBtn = document.getElementById('debug-btn');
         const toast = document.getElementById('toast');
         const loadingOverlay = document.getElementById('loading-overlay');
+        const clearAllDataBtn = document.getElementById('clear-all-data');
 
         // Initialize
         function init() {
@@ -312,6 +319,11 @@
             prevDayBtn.addEventListener('click', navigateToPreviousDay);
             nextDayBtn.addEventListener('click', navigateToNextDay);
             debugBtn.addEventListener('click', showDebugInfo);
+            clearAllDataBtn.addEventListener('click', function() {
+                if (confirm("WARNING: This will delete all your medication data and history.\n\nAre you sure you want to continue?")) {
+                    clearAllAppData();
+                }
+            });
 
             // Update date display
             updateDateDisplay();
@@ -487,88 +499,87 @@
         }
 
         // Process Excel data
-        // Process Excel data
-function processExcelData(data) {
-    // Group medications by time slot
-    const timeSlots = {};
+        function processExcelData(data) {
+            // Group medications by time slot
+            const timeSlots = {};
 
-    data.forEach(row => {
-        const timeSlot = row.TimeSlot;
-        const medName = row.MedicationName;
-        const instructions = row.Instructions || '';
+            data.forEach(row => {
+                const timeSlot = row.TimeSlot;
+                const medName = row.MedicationName;
+                const instructions = row.Instructions || '';
 
-        if (!timeSlots[timeSlot]) {
-            timeSlots[timeSlot] = [];
+                if (!timeSlots[timeSlot]) {
+                    timeSlots[timeSlot] = [];
+                }
+
+                timeSlots[timeSlot].push({
+                    name: medName,
+                    instructions: instructions
+                });
+            });
+
+            // Convert to our format
+            const newMedicationData = Object.keys(timeSlots).map(timeSlot => ({
+                name: timeSlot,
+                meds: timeSlots[timeSlot]
+            }));
+
+            // Sort by time (using proper time comparison)
+            newMedicationData.sort((a, b) => {
+                return compareTimeSlots(a.name, b.name);
+            });
+
+            // Update medication data
+            medicationData = newMedicationData;
+
+            // Save to localStorage
+            try {
+                localStorage.setItem('pillpal_medication_data', JSON.stringify(medicationData));
+            } catch (e) {
+                console.error("Error saving medication data:", e);
+                showToast("Error saving data: " + e.message);
+            }
+
+            // Refresh UI
+            createMedicationList();
         }
 
-        timeSlots[timeSlot].push({
-            name: medName,
-            instructions: instructions
-        });
-    });
+        // Helper function to compare time slots chronologically
+        function compareTimeSlots(timeA, timeB) {
+            // Extract time parts
+            const timeRegex = /(\d+):?(\d*)\s*(AM|PM)?/i;
 
-    // Convert to our format
-    const newMedicationData = Object.keys(timeSlots).map(timeSlot => ({
-        name: timeSlot,
-        meds: timeSlots[timeSlot]
-    }));
+            const matchA = timeA.match(timeRegex);
+            const matchB = timeB.match(timeRegex);
 
-    // Sort time slots chronologically
-    newMedicationData.sort((a, b) => {
-        return compareTimeSlots(a.name, b.name);
-    });
+            // If either doesn't match the time pattern, fall back to string comparison
+            if (!matchA || !matchB) {
+                return timeA.localeCompare(timeB);
+            }
 
-    // Update medication data
-    medicationData = newMedicationData;
+            let hourA = parseInt(matchA[1], 10);
+            let hourB = parseInt(matchB[1], 10);
 
-    // Save to localStorage
-    try {
-        localStorage.setItem('pillpal_medication_data', JSON.stringify(medicationData));
-    } catch (e) {
-        console.error("Error saving medication data:", e);
-        showToast("Error saving data: " + e.message);
-    }
+            // Convert to 24-hour format
+            const periodA = matchA[3] ? matchA[3].toUpperCase() : null;
+            const periodB = matchB[3] ? matchB[3].toUpperCase() : null;
 
-    // Refresh UI
-    createMedicationList();
-}
+            if (periodA === 'PM' && hourA < 12) hourA += 12;
+            if (periodA === 'AM' && hourA === 12) hourA = 0;
+            if (periodB === 'PM' && hourB < 12) hourB += 12;
+            if (periodB === 'AM' && hourB === 12) hourB = 0;
 
-// Helper function to compare time slots chronologically
-function compareTimeSlots(timeA, timeB) {
-    // Extract time parts
-    const timeRegex = /(\d+):?(\d*)\s*(AM|PM)?/i;
+            // Compare hours
+            if (hourA !== hourB) {
+                return hourA - hourB;
+            }
 
-    const matchA = timeA.match(timeRegex);
-    const matchB = timeB.match(timeRegex);
+            // If hours are equal, compare minutes
+            const minuteA = matchA[2] ? parseInt(matchA[2], 10) : 0;
+            const minuteB = matchB[2] ? parseInt(matchB[2], 10) : 0;
 
-    // If either doesn't match the time pattern, fall back to string comparison
-    if (!matchA || !matchB) {
-        return timeA.localeCompare(timeB);
-    }
-
-    let hourA = parseInt(matchA[1], 10);
-    let hourB = parseInt(matchB[1], 10);
-
-    // Convert to 24-hour format
-    const periodA = matchA[3] ? matchA[3].toUpperCase() : null;
-    const periodB = matchB[3] ? matchB[3].toUpperCase() : null;
-
-    if (periodA === 'PM' && hourA < 12) hourA += 12;
-    if (periodA === 'AM' && hourA === 12) hourA = 0;
-    if (periodB === 'PM' && hourB < 12) hourB += 12;
-    if (periodB === 'AM' && hourB === 12) hourB = 0;
-
-    // Compare hours
-    if (hourA !== hourB) {
-        return hourA - hourB;
-    }
-
-    // If hours are equal, compare minutes
-    const minuteA = matchA[2] ? parseInt(matchA[2], 10) : 0;
-    const minuteB = matchB[2] ? parseInt(matchB[2], 10) : 0;
-
-    return minuteA - minuteB;
-}
+            return minuteA - minuteB;
+        }
 
         // Load default data
         function loadDefaultData() {
@@ -657,6 +668,32 @@ function compareTimeSlots(timeA, timeB) {
             } else {
                 const options = { weekday: 'long', month: 'short', day: 'numeric' };
                 currentDateEl.textContent = selectedDate.toLocaleDateString('en-US', options);
+            }
+        }
+
+        // Function to clear all app data
+        function clearAllAppData() {
+            try {
+                // Clear all PillPal-related data from localStorage
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.startsWith('pillpal_')) {
+                        keysToRemove.push(key);
+                    }
+                }
+
+                // Remove the collected keys
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+
+                // Reset to default data
+                medicationData = [...defaultMedicationData];
+                createMedicationList();
+
+                showToast("All app data has been cleared!");
+            } catch (e) {
+                console.error("Error clearing data:", e);
+                showToast("Error clearing data: " + e.message);
             }
         }
 

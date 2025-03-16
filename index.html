@@ -487,50 +487,88 @@
         }
 
         // Process Excel data
-        function processExcelData(data) {
-            // Group medications by time slot
-            const timeSlots = {};
+        // Process Excel data
+function processExcelData(data) {
+    // Group medications by time slot
+    const timeSlots = {};
 
-            data.forEach(row => {
-                const timeSlot = row.TimeSlot;
-                const medName = row.MedicationName;
-                const instructions = row.Instructions || '';
+    data.forEach(row => {
+        const timeSlot = row.TimeSlot;
+        const medName = row.MedicationName;
+        const instructions = row.Instructions || '';
 
-                if (!timeSlots[timeSlot]) {
-                    timeSlots[timeSlot] = [];
-                }
-
-                timeSlots[timeSlot].push({
-                    name: medName,
-                    instructions: instructions
-                });
-            });
-
-            // Convert to our format
-            const newMedicationData = Object.keys(timeSlots).map(timeSlot => ({
-                name: timeSlot,
-                meds: timeSlots[timeSlot]
-            }));
-
-            // Sort by time (simple string comparison for now)
-            newMedicationData.sort((a, b) => {
-                return a.name.localeCompare(b.name);
-            });
-
-            // Update medication data
-            medicationData = newMedicationData;
-
-            // Save to localStorage
-            try {
-                localStorage.setItem('pillpal_medication_data', JSON.stringify(medicationData));
-            } catch (e) {
-                console.error("Error saving medication data:", e);
-                showToast("Error saving data: " + e.message);
-            }
-
-            // Refresh UI
-            createMedicationList();
+        if (!timeSlots[timeSlot]) {
+            timeSlots[timeSlot] = [];
         }
+
+        timeSlots[timeSlot].push({
+            name: medName,
+            instructions: instructions
+        });
+    });
+
+    // Convert to our format
+    const newMedicationData = Object.keys(timeSlots).map(timeSlot => ({
+        name: timeSlot,
+        meds: timeSlots[timeSlot]
+    }));
+
+    // Sort time slots chronologically
+    newMedicationData.sort((a, b) => {
+        return compareTimeSlots(a.name, b.name);
+    });
+
+    // Update medication data
+    medicationData = newMedicationData;
+
+    // Save to localStorage
+    try {
+        localStorage.setItem('pillpal_medication_data', JSON.stringify(medicationData));
+    } catch (e) {
+        console.error("Error saving medication data:", e);
+        showToast("Error saving data: " + e.message);
+    }
+
+    // Refresh UI
+    createMedicationList();
+}
+
+// Helper function to compare time slots chronologically
+function compareTimeSlots(timeA, timeB) {
+    // Extract time parts
+    const timeRegex = /(\d+):?(\d*)\s*(AM|PM)?/i;
+
+    const matchA = timeA.match(timeRegex);
+    const matchB = timeB.match(timeRegex);
+
+    // If either doesn't match the time pattern, fall back to string comparison
+    if (!matchA || !matchB) {
+        return timeA.localeCompare(timeB);
+    }
+
+    let hourA = parseInt(matchA[1], 10);
+    let hourB = parseInt(matchB[1], 10);
+
+    // Convert to 24-hour format
+    const periodA = matchA[3] ? matchA[3].toUpperCase() : null;
+    const periodB = matchB[3] ? matchB[3].toUpperCase() : null;
+
+    if (periodA === 'PM' && hourA < 12) hourA += 12;
+    if (periodA === 'AM' && hourA === 12) hourA = 0;
+    if (periodB === 'PM' && hourB < 12) hourB += 12;
+    if (periodB === 'AM' && hourB === 12) hourB = 0;
+
+    // Compare hours
+    if (hourA !== hourB) {
+        return hourA - hourB;
+    }
+
+    // If hours are equal, compare minutes
+    const minuteA = matchA[2] ? parseInt(matchA[2], 10) : 0;
+    const minuteB = matchB[2] ? parseInt(matchB[2], 10) : 0;
+
+    return minuteA - minuteB;
+}
 
         // Load default data
         function loadDefaultData() {

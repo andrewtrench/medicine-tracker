@@ -11,7 +11,7 @@
             font-family: Arial, sans-serif;
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0;
             background-color: #f5f5f5;
         }
         h1 {
@@ -163,32 +163,151 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* New Navigation Bar Styles */
+        .navbar {
+            background-color: #4285f4;
+            color: white;
+            padding: 10px 0;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+        .navbar-menu {
+            position: relative;
+            display: inline-block;
+        }
+        .menu-icon {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: white;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 4px;
+        }
+        .dropdown-content button {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            text-align: left;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+        .dropdown-content button:hover {
+            background-color: #f1f1f1;
+        }
+        .dropdown-content hr {
+            margin: 5px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+        .dropdown-content.show {
+            display: block;
+        }
+        .main-content {
+            padding: 0 15px 20px 15px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 200;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 500px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-btn:hover {
+            color: black;
+        }
     </style>
 </head>
 <body>
-    <h1>PillPal</h1>
-
-    <div class="settings-section">
-        <h3>Medication Schedule</h3>
-        <p>Upload an Excel file with your medication schedule:</p>
-        <input type="file" id="excel-file" class="file-input" accept=".xlsx, .xls">
-        <button id="load-default" class="btn">Load Default Schedule</button>
-        <button id="download-template" class="btn btn-success">Download Template</button>
-
-        <!-- New Data Management Section -->
-        <hr style="margin: 15px 0; border-top: 1px solid #ddd;">
-        <h3>Data Management</h3>
-        <button id="clear-all-data" class="btn btn-danger">Clear All App Data</button>
+    <!-- Navigation Bar -->
+    <div class="navbar">
+        <div class="navbar-container">
+            <a href="#" class="navbar-brand">PillPal</a>
+            <div class="navbar-menu">
+                <button class="menu-icon" id="menu-button">☰</button>
+                <div class="dropdown-content" id="dropdown-menu">
+                    <button id="upload-excel">Upload Schedule</button>
+                    <button id="load-default">Load Default Schedule</button>
+                    <button id="download-template">Download Template</button>
+                    <hr>
+                    <button id="clear-all-data" style="color: #ea4335;">Clear All App Data</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="date-nav">
-        <button id="prev-day">&lt; Previous</button>
-        <span id="current-date">Today</span>
-        <button id="next-day">Next &gt;</button>
+    <div class="main-content">
+        <div class="date-nav">
+            <button id="prev-day">&lt; Previous</button>
+            <span id="current-date">Today</span>
+            <button id="next-day">Next &gt;</button>
+        </div>
+
+        <div id="medication-list">
+            <!-- Medications will be populated here -->
+        </div>
     </div>
 
-    <div id="medication-list">
-        <!-- Medications will be populated here -->
+    <!-- Upload Schedule Modal -->
+    <div id="upload-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Upload Medication Schedule</h3>
+                <span class="close-btn" id="close-upload-modal">&times;</span>
+            </div>
+            <p>Select an Excel file with your medication schedule:</p>
+            <input type="file" id="excel-file" class="file-input" accept=".xlsx, .xls">
+        </div>
     </div>
 
     <div id="toast" class="toast">Message</div>
@@ -283,15 +402,24 @@
         // DOM elements
         const medList = document.getElementById('medication-list');
         const excelFile = document.getElementById('excel-file');
-        const loadDefaultBtn = document.getElementById('load-default');
-        const downloadTemplateBtn = document.getElementById('download-template');
         const prevDayBtn = document.getElementById('prev-day');
         const nextDayBtn = document.getElementById('next-day');
         const currentDateEl = document.getElementById('current-date');
         const debugBtn = document.getElementById('debug-btn');
         const toast = document.getElementById('toast');
         const loadingOverlay = document.getElementById('loading-overlay');
+
+        // Navigation menu elements
+        const menuButton = document.getElementById('menu-button');
+        const dropdownMenu = document.getElementById('dropdown-menu');
+        const uploadExcelBtn = document.getElementById('upload-excel');
+        const loadDefaultBtn = document.getElementById('load-default');
+        const downloadTemplateBtn = document.getElementById('download-template');
         const clearAllDataBtn = document.getElementById('clear-all-data');
+
+        // Modal elements
+        const uploadModal = document.getElementById('upload-modal');
+        const closeUploadModal = document.getElementById('close-upload-modal');
 
         // Initialize
         function init() {
@@ -314,19 +442,55 @@
 
             // Set up event listeners
             excelFile.addEventListener('change', handleExcelFile);
-            loadDefaultBtn.addEventListener('click', loadDefaultData);
-            downloadTemplateBtn.addEventListener('click', downloadTemplate);
             prevDayBtn.addEventListener('click', navigateToPreviousDay);
             nextDayBtn.addEventListener('click', navigateToNextDay);
             debugBtn.addEventListener('click', showDebugInfo);
+
+            // Menu event listeners
+            menuButton.addEventListener('click', toggleMenu);
+            uploadExcelBtn.addEventListener('click', showUploadModal);
+            loadDefaultBtn.addEventListener('click', loadDefaultData);
+            downloadTemplateBtn.addEventListener('click', downloadTemplate);
             clearAllDataBtn.addEventListener('click', function() {
                 if (confirm("WARNING: This will delete all your medication data and history.\n\nAre you sure you want to continue?")) {
                     clearAllAppData();
+                }
+                closeMenu();
+            });
+
+            // Modal event listeners
+            closeUploadModal.addEventListener('click', closeModal);
+
+            // Close menu when clicking outside
+            window.addEventListener('click', function(event) {
+                if (!event.target.matches('.menu-icon') && dropdownMenu.classList.contains('show')) {
+                    closeMenu();
                 }
             });
 
             // Update date display
             updateDateDisplay();
+        }
+
+        // Toggle dropdown menu
+        function toggleMenu() {
+            dropdownMenu.classList.toggle('show');
+        }
+
+        // Close dropdown menu
+        function closeMenu() {
+            dropdownMenu.classList.remove('show');
+        }
+
+        // Show upload modal
+        function showUploadModal() {
+            uploadModal.style.display = 'block';
+            closeMenu();
+        }
+
+        // Close modals
+        function closeModal() {
+            uploadModal.style.display = 'none';
         }
 
         // Create medication list from data
@@ -443,6 +607,7 @@
             if (!file) return;
 
             showLoading(true);
+            closeModal();
 
             // Read the Excel file
             const reader = new FileReader();
@@ -595,6 +760,7 @@
             // Refresh UI
             createMedicationList();
             showToast("Default medication schedule loaded!");
+            closeMenu();
         }
 
         // Download template Excel file
@@ -639,6 +805,7 @@
 
             // Write to file and download
             XLSX.writeFile(wb, 'PillPal_Schedule_Template.xlsx');
+            closeMenu();
         }
 
         // Navigate to previous day
@@ -738,24 +905,3 @@
         // Show toast message
         function showToast(message) {
             toast.textContent = message;
-            toast.style.display = 'block';
-
-            setTimeout(function() {
-                toast.style.display = 'none';
-            }, 3000);
-        }
-
-        // Show/hide loading overlay
-        function showLoading(show) {
-            if (show) {
-                loadingOverlay.style.display = 'flex';
-            } else {
-                loadingOverlay.style.display = 'none';
-            }
-        }
-
-        // Initialize app
-        window.addEventListener('DOMContentLoaded', init);
-    </script>
-</body>
-</html>

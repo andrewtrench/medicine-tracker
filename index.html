@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medication Tracker</title>
+    <title>PillPal</title>
     <!-- SheetJS library for Excel file parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -165,7 +165,7 @@
     </style>
 </head>
 <body>
-    <h1>Medication Tracker</h1>
+    <h1>PillPal</h1>
 
     <div class="settings-section">
         <h3>Medication Schedule</h3>
@@ -289,7 +289,7 @@
         // Initialize
         function init() {
             // Try to load saved medication data
-            const savedData = localStorage.getItem('medication_data');
+            const savedData = localStorage.getItem('pillpal_medication_data');
             if (savedData) {
                 try {
                     medicationData = JSON.parse(savedData);
@@ -324,7 +324,7 @@
             // Try to get saved medication statuses
             let savedMeds = {};
             try {
-                const saved = localStorage.getItem('meds_' + dateStr);
+                const saved = localStorage.getItem('pillpal_meds_' + dateStr);
                 if (saved) {
                     savedMeds = JSON.parse(saved);
                 }
@@ -395,7 +395,7 @@
             // Get saved medications
             let savedMeds = {};
             try {
-                const saved = localStorage.getItem('meds_' + dateStr);
+                const saved = localStorage.getItem('pillpal_meds_' + dateStr);
                 if (saved) {
                     savedMeds = JSON.parse(saved);
                 }
@@ -408,7 +408,7 @@
 
             // Save back to localStorage
             try {
-                localStorage.setItem('meds_' + dateStr, JSON.stringify(savedMeds));
+                localStorage.setItem('pillpal_meds_' + dateStr, JSON.stringify(savedMeds));
             } catch (e) {
                 console.error("Error saving medications:", e);
                 showToast("Error saving: " + e.message);
@@ -522,7 +522,7 @@
 
             // Save to localStorage
             try {
-                localStorage.setItem('medication_data', JSON.stringify(medicationData));
+                localStorage.setItem('pillpal_medication_data', JSON.stringify(medicationData));
             } catch (e) {
                 console.error("Error saving medication data:", e);
                 showToast("Error saving data: " + e.message);
@@ -538,7 +538,7 @@
 
             // Save to localStorage
             try {
-                localStorage.setItem('medication_data', JSON.stringify(medicationData));
+                localStorage.setItem('pillpal_medication_data', JSON.stringify(medicationData));
             } catch (e) {
                 console.error("Error saving medication data:", e);
             }
@@ -575,7 +575,7 @@
 
             // Create instructions sheet
             const instructionsWs = XLSX.utils.aoa_to_sheet([
-                ['Medication Schedule Template'],
+                ['PillPal Template'],
                 [''],
                 ['Instructions:'],
                 ['1. Do not modify the header row (TimeSlot, MedicationName, Instructions)'],
@@ -589,7 +589,7 @@
             XLSX.utils.book_append_sheet(wb, instructionsWs, 'Instructions');
 
             // Write to file and download
-            XLSX.writeFile(wb, 'Medication_Schedule_Template.xlsx');
+            XLSX.writeFile(wb, 'PillPal_Schedule_Template.xlsx');
         }
 
         // Navigate to previous day
@@ -625,7 +625,7 @@
         // Show debug info
         function showDebugInfo() {
             const dateStr = selectedDate.toISOString().split('T')[0];
-            let debugInfo = "Debug Info:\n";
+            let debugInfo = "PillPal Debug Info:\n";
             debugInfo += "- Date: " + dateStr + "\n";
             debugInfo += "- Time slots: " + medicationData.length + "\n";
 
@@ -641,7 +641,7 @@
                 localStorage.removeItem('test');
                 debugInfo += "- localStorage working: Yes\n";
 
-                const saved = localStorage.getItem('meds_' + dateStr);
+                const saved = localStorage.getItem('pillpal_meds_' + dateStr);
                 if (saved) {
                     const savedMeds = JSON.parse(saved);
                     const takenCount = Object.values(savedMeds).filter(Boolean).length;
@@ -651,7 +651,7 @@
                 }
 
                 // Check if using custom schedule
-                const isCustom = localStorage.getItem('medication_data') ? "Yes" : "No";
+                const isCustom = localStorage.getItem('pillpal_medication_data') ? "Yes" : "No";
                 debugInfo += "- Using custom schedule: " + isCustom + "\n";
             } catch (e) {
                 debugInfo += "- localStorage error: " + e.message + "\n";

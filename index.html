@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medication Tracker</title>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#4285f4">
-    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <link rel="apple-touch-icon" href="./icon-192x192.png">
     <style>
         :root {
             --primary-color: #4285f4;
@@ -93,9 +93,16 @@
 
         .medication-checkbox {
             margin-right: 1rem;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             accent-color: var(--secondary-color);
+            cursor: pointer;
+        }
+
+        /* Make medication row itself clickable for better mobile experience */
+        .medication {
+            cursor: pointer;
+            -webkit-tap-highlight-color: rgba(0,0,0,0.05);
         }
 
         .medication-info {
@@ -375,6 +382,9 @@
     </div>
 
     <div id="toast" class="toast">Medication marked as taken!</div>
+
+    <!-- Debug button for mobile devices -->
+    <div style="position: fixed; bottom: 80px; right: 10px; background: rgba(0,0,0,0.5); color: white; padding: 8px; border-radius: 50%; width: 30px; height: 30px; text-align: center; font-weight: bold; z-index: 1000;" id="debug-btn">?</div>
 
     <nav>
         <button id="today-btn" class="active">
@@ -668,7 +678,19 @@
 
                     // Add event listener to checkbox
                     const checkbox = medicationElement.querySelector(`#${medicationId}`);
-                    checkbox.addEventListener('change', () => {
+
+                    // Make entire medication row clickable for better touch experience
+                    medicationElement.addEventListener('click', function(e) {
+                        // Don't toggle if clicking directly on the checkbox (it will handle itself)
+                        if (e.target !== checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            // Trigger change event manually
+                            const changeEvent = new Event('change');
+                            checkbox.dispatchEvent(changeEvent);
+                        }
+                    });
+
+                    checkbox.addEventListener('change', function() {
                         // Update local storage
                         takenMedications[medicationId] = checkbox.checked;
                         localStorage.setItem(`taken_${dateString}`, JSON.stringify(takenMedications));

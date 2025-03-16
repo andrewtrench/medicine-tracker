@@ -788,41 +788,83 @@ function processExcelData(data) {
         }
 
         // Helper function to compare time slots chronologically
-        function compareTimeSlots(timeA, timeB) {
-            // Extract time parts
-            const timeRegex = /(\d+):?(\d*)\s*(AM|PM)?/i;
+        // Helper function to compare time slots chronologically - improved version
+function compareTimeSlots(timeA, timeB) {
+    console.log(`Comparing time slots: "${timeA}" vs "${timeB}"`);
 
-            const matchA = timeA.match(timeRegex);
-            const matchB = timeB.match(timeRegex);
+    // Extract time parts using a more comprehensive regex
+    // This regex captures hours, minutes, and AM/PM markers, even with text in parentheses
+    const timeRegex = /(\d+):?(\d*)\s*(AM|PM)?/i;
 
-            // If either doesn't match the time pattern, fall back to string comparison
-            if (!matchA || !matchB) {
-                return timeA.localeCompare(timeB);
-            }
+    const matchA = timeA.match(timeRegex);
+    const matchB = timeB.match(timeRegex);
 
-            let hourA = parseInt(matchA[1], 10);
-            let hourB = parseInt(matchB[1], 10);
+    // If either doesn't match the time pattern, fall back to string comparison
+    if (!matchA || !matchB) {
+        console.log(`No time pattern match, using string comparison for "${timeA}" vs "${timeB}"`);
+        return timeA.localeCompare(timeB);
+    }
 
-            // Convert to 24-hour format
-            const periodA = matchA[3] ? matchA[3].toUpperCase() : null;
-            const periodB = matchB[3] ? matchB[3].toUpperCase() : null;
+    let hourA = parseInt(matchA[1], 10);
+    let hourB = parseInt(matchB[1], 10);
 
-            if (periodA === 'PM' && hourA < 12) hourA += 12;
-            if (periodA === 'AM' && hourA === 12) hourA = 0;
-            if (periodB === 'PM' && hourB < 12) hourB += 12;
-            if (periodB === 'AM' && hourB === 12) hourB = 0;
+    // Convert to 24-hour format
+    const periodA = matchA[3] ? matchA[3].toUpperCase() : null;
+    const periodB = matchB[3] ? matchB[3].toUpperCase() : null;
 
-            // Compare hours
-            if (hourA !== hourB) {
-                return hourA - hourB;
-            }
+    // Special handling for 12 AM and 12 PM
+    if (periodA === 'AM' && hourA === 12) hourA = 0;     // 12:00 AM = 00:00 in 24h
+    if (periodA === 'PM' && hourA === 12) hourA = 12;    // 12:00 PM = 12:00 in 24h
+    if (periodB === 'AM' && hourB === 12) hourB = 0;     // 12:00 AM = 00:00 in 24h
+    if (periodB === 'PM' && hourB === 12) hourB = 12;    // 12:00 PM = 12:00 in 24h
 
-            // If hours are equal, compare minutes
-            const minuteA = matchA[2] ? parseInt(matchA[2], 10) : 0;
-            const minuteB = matchB[2] ? parseInt(matchB[2], 10) : 0;
+    // Standard conversion for other hours
+    if (periodA === 'PM' && hourA < 12) hourA += 12;
+    if (periodB === 'PM' && hourB < 12) hourB += 12;
 
-            return minuteA - minuteB;
-        }
+    console.log(`Converted to 24h: A=${hourA} (${timeA}), B=${hourB} (${timeB})`);
+
+    // Compare hours
+    if (hourA !== hourB) {
+        return hourA - hourB;
+    }
+
+    // If hours are equal, compare minutes
+    const minuteA = matchA[2] ? parseInt(matchA[2], 10) : 0;
+    const minuteB = matchB[2] ? parseInt(matchB[2], 10) : 0;
+
+    return minuteA - minuteB;
+}
+
+// Function for debugging time slot order
+function debugTimeSlotOrder() {
+    console.log("===== TIME SLOT ORDERING DEBUG =====");
+
+    // Clone the current medicationData for testing
+    const testData = JSON.parse(JSON.stringify(medicationData));
+
+    // Add a test time slot if it doesn't exist
+    const has12AM = testData.some(slot => slot.name.includes("12:00 AM"));
+    if (!has12AM) {
+        testData.push({
+            name: "12:00 AM (Early morning pain)",
+            meds: [{name: "Test Med", instructions: ""}]
+        });
+    }
+
+    // Sort using our algorithm
+    testData.sort((a, b) => compareTimeSlots(a.name, b.name));
+
+    // Print the sorted order
+    console.log("Sorted time slots:");
+    testData.forEach((slot, i) => {
+        console.log(`${i+1}. ${slot.name}`);
+    });
+
+    console.log("===================================");
+
+    return testData;
+}
 
         // Load default data
         function loadDefaultData() {

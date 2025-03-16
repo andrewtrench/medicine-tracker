@@ -595,101 +595,152 @@
         }
 
         // Handle Excel file upload with comprehensive error handling
-        function handleExcelFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        // Convert Excel sheet to JSON with options to ensure all rows are processed
+function handleExcelFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-            showLoading(true);
-            uploadModal.style.display = 'none';
+    showLoading(true);
+    uploadModal.style.display = 'none';
 
-            // Read the Excel file
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    console.log("File read successfully, starting to process file:", file.name);
-                    const data = new Uint8Array(e.target.result);
+    // Show file name in console for debugging
+    console.log("Processing file:", file.name);
 
-                    // Try to read the workbook
-                    let workbook;
-                    try {
-                        workbook = XLSX.read(data, { type: 'array' });
-                        console.log("Workbook read successfully. Available sheets:", workbook.SheetNames);
-                    } catch (error) {
-                        console.error("Error reading Excel workbook:", error);
-                        showToast("Invalid Excel file format. Please check the file.");
-                        showLoading(false);
-                        return;
-                    }
+    // Read the Excel file
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
 
-                    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
-                        console.error("No sheets found in workbook");
-                        showToast("No sheets found in Excel file");
-                        showLoading(false);
-                        return;
-                    }
-
-                    // Get the first sheet
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-
-                    // Log sheet data for debugging
-                    console.log("Sheet content snapshot:", XLSX.utils.sheet_to_json(worksheet, { header: 1 }).slice(0, 3));
-
-                    // Convert to JSON
-                    let jsonData;
-                    try {
-                        jsonData = XLSX.utils.sheet_to_json(worksheet);
-                        console.log("JSON data sample:", jsonData.slice(0, 2));
-
-                        if (jsonData.length === 0) {
-                            console.error("Empty data set or header row issue");
-                            showToast("The Excel file appears to be empty or has header issues");
-                            showLoading(false);
-                            return;
-                        }
-                    } catch (error) {
-                        console.error("Error converting sheet to JSON:", error);
-                        showToast("Error parsing Excel data");
-                        showLoading(false);
-                        return;
-                    }
-
-                    // Validate the data structure with detailed logging
-                    const validationResult = validateExcelData(jsonData);
-                    if (!validationResult.valid) {
-                        showToast(validationResult.message);
-                        showLoading(false);
-                        return;
-                    }
-
-                    // Process the data with better error trapping
-                    try {
-                        processExcelData(jsonData);
-                        showToast("Medication schedule loaded successfully!");
-
-                        // Explicitly update the UI
-                        createMedicationList();
-                    } catch (error) {
-                        console.error("Error in processing Excel data:", error);
-                        showToast("Error processing data: " + (error.message || "Unknown error"));
-                    }
-                } catch (e) {
-                    console.error("General error processing Excel file:", e);
-                    showToast("Error processing file: " + (e.message || "Unknown error"));
-                } finally {
-                    showLoading(false);
-                }
-            };
-
-            reader.onerror = function(error) {
-                console.error("FileReader error:", error);
-                showToast("Error reading file");
+            // Try to read the workbook with more detailed options
+            let workbook;
+            try {
+                workbook = XLSX.read(data, {
+                    type: 'array',
+                    cellDates: true,
+                    cellNF: true,
+                    cellStyles: true
+                });
+                console.log("Available sheets:", workbook.SheetNames);
+            } catch (error) {
+                console.error("Error reading Excel workbook:", error);
+                showToast("Invalid Excel file format. Please check the file.");
                 showLoading(false);
-            };
+                return;
+            }
 
-            reader.readAsArrayBuffer(file);
+            // Get the first sheet
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+
+            // Get sheet range to check how many rows are available
+            const range = XLSX.utils.decode_range(worksheet['!ref']);
+            console.log("Sheet range:", worksheet['!ref'],
+                        "Rows:", range.e.r - range.s.r + 1,
+                        "Columns:", range.e.c - range.s.c + 1);
+
+            // Convert to JSON with header handling options
+            let jsonData;
+            try {
+                // Convert with explicit options to ensure proper header handling
+                jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                    header: 1,
+                    defval: '',
+                    blankrows: false
+                });
+
+                // If the first row contains headers, process them
+                if (jsonData.length > 0) {
+                    const headers = jsonData[0];
+                    console.log("Raw headers:", headers);
+
+                    // Check if we have headers
+                    if (headers.length === 0 || !headers.some(h => h.toString().toLowerCase().includes('time') ||
+                                                          h.toString().toLowerCase().includes('medication'))) {
+                        console.warn("Headers might be missing or incorrect");
+                    }
+
+                    // Convert array data to objects with proper column mapping
+                    let objectData = [];
+                    for (let i = 1; i < jsonData.length; i++) {
+                        if (jsonData[i].length === 0) continue; // Skip empty rows
+
+                        const row = {};
+                        for (let j = 0; j < headers.length; j++) {
+                            if (headers[j]) {
+                                row[headers[j]] = jsonData[i][j] || '';
+                            }
+                        }
+                        objectData.push(row);
+                    }
+
+                    // Log the processed object data
+                    console.log("Processed row count:", objectData.length);
+                    console.log("Sample rows:", objectData.slice(0, 3));
+
+                    // Switch to using our processed data
+                    jsonData = objectData;
+                } else {
+                    console.error("No data rows found in Excel");
+                    showToast("No data found in Excel file");
+                    showLoading(false);
+                    return;
+                }
+
+                // Check for 12:00 AM time slot specifically
+                const has12AM = jsonData.some(row =>
+                    row.TimeSlot &&
+                    row.TimeSlot.toString().toLowerCase().includes('12:00 am')
+                );
+                console.log("12:00 AM time slot found:", has12AM);
+
+            } catch (error) {
+                console.error("Error converting sheet to JSON:", error);
+                showToast("Error parsing Excel data");
+                showLoading(false);
+                return;
+            }
+
+            // Validate the data structure
+            const validationResult = validateExcelData(jsonData);
+            if (!validationResult.valid) {
+                showToast(validationResult.message);
+                showLoading(false);
+                return;
+            }
+
+            // Process the data
+            try {
+                processExcelData(jsonData);
+                showToast("Medication schedule loaded successfully!");
+
+                // Explicitly update the UI
+                createMedicationList();
+
+                // Force sorting check
+                console.log("Final time slots order:");
+                medicationData.forEach((slot, i) => {
+                    console.log(`${i+1}. ${slot.name}`);
+                });
+            } catch (error) {
+                console.error("Error in processing Excel data:", error);
+                showToast("Error processing data: " + (error.message || "Unknown error"));
+            }
+        } catch (e) {
+            console.error("General error processing Excel file:", e);
+            showToast("Error processing file: " + (e.message || "Unknown error"));
+        } finally {
+            showLoading(false);
         }
+    };
 
+    reader.onerror = function() {
+        showToast("Error reading file");
+        showLoading(false);
+    };
+
+    reader.readAsArrayBuffer(file);
+}
         // Validate Excel data with comprehensive checks and helpful feedback
         function validateExcelData(data) {
             console.log("Validating Excel data structure");

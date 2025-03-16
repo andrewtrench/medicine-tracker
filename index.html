@@ -3,29 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Medication Tracker</title>
+    <title>Medication Tracker</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
+            background-color: #f5f5f5;
         }
         h1 {
             text-align: center;
             color: #4285f4;
+            margin-bottom: 20px;
         }
         .time-slot {
             margin-bottom: 20px;
             border: 1px solid #ddd;
             border-radius: 8px;
             overflow: hidden;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .time-header {
             background-color: #4285f4;
             color: white;
-            padding: 10px;
+            padding: 12px 15px;
             font-weight: bold;
+            font-size: 16px;
         }
         .medication {
             padding: 15px;
@@ -40,6 +45,7 @@
             margin-right: 15px;
             width: 24px;
             height: 24px;
+            cursor: pointer;
         }
         .medication.completed .med-name {
             text-decoration: line-through;
@@ -52,20 +58,48 @@
             transform: translateX(-50%);
             background-color: #333;
             color: white;
-            padding: 10px 20px;
+            padding: 12px 20px;
             border-radius: 4px;
             display: none;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         .med-info {
             flex-grow: 1;
+            cursor: pointer;
         }
         .med-name {
             font-weight: bold;
         }
         .med-instructions {
-            font-size: 0.8em;
+            font-size: 0.85em;
             color: #666;
             margin-top: 4px;
+        }
+        .debug-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(0,0,0,0.6);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 36px;
+            font-weight: bold;
+            z-index: 100;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        /* Add simple animation for when medications are checked */
+        @keyframes checkPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .pulse {
+            animation: checkPulse 0.3s ease-in-out;
         }
     </style>
 </head>
@@ -77,9 +111,13 @@
     </div>
 
     <div id="toast" class="toast">Message</div>
+    <div class="debug-btn" id="debug-btn">?</div>
 
     <script>
-        // Sample medication data
+        // Debug alert to see if script loads
+        console.log("Script started");
+
+        // Complete medication data from your schedule
         const medicationData = [
             {
                 timeSlot: "6:30 AM (Before Breakfast)",
@@ -93,7 +131,8 @@
                 medications: [
                     { name: "Targinact x2", instructions: "" },
                     { name: "Xeloda", instructions: "" },
-                    { name: "Losaar", instructions: "Only if BP is up" }
+                    { name: "Losaar", instructions: "Only if BP is up" },
+                    { name: "Amlodipine", instructions: "Only if BP is up" }
                 ]
             },
             {
@@ -102,12 +141,62 @@
                     { name: "Oxynorm", instructions: "2 tablets" },
                     { name: "Paracetamol", instructions: "" }
                 ]
+            },
+            {
+                timeSlot: "12:30 PM (Before Lunch)",
+                medications: [
+                    { name: "Clopamon", instructions: "Anti nausea" },
+                    { name: "Ondansetron", instructions: "Anti nausea" }
+                ]
+            },
+            {
+                timeSlot: "12:30 PM",
+                medications: [
+                    { name: "Lenamet", instructions: "Stops stomach acid" }
+                ]
+            },
+            {
+                timeSlot: "3:00 PM (Afternoon)",
+                medications: [
+                    { name: "Oxynorm", instructions: "" },
+                    { name: "Paracetamol", instructions: "" }
+                ]
+            },
+            {
+                timeSlot: "6:30 PM (Before Dinner)",
+                medications: [
+                    { name: "Clopamon", instructions: "" },
+                    { name: "Ondansetron", instructions: "" }
+                ]
+            },
+            {
+                timeSlot: "7:00 PM (Dinner)",
+                medications: [
+                    { name: "Targinact", instructions: "" },
+                    { name: "Xeloda", instructions: "" },
+                    { name: "Adco-Simvastatin", instructions: "" }
+                ]
+            },
+            {
+                timeSlot: "9:00 PM (Night)",
+                medications: [
+                    { name: "Oxynorm", instructions: "" },
+                    { name: "Paracetamol", instructions: "" }
+                ]
+            },
+            {
+                timeSlot: "10:00 PM (Before Bed)",
+                medications: [
+                    { name: "Movicol", instructions: "" },
+                    { name: "Lenamet", instructions: "" }
+                ]
             }
         ];
 
         // DOM Elements
         const medicationList = document.getElementById('medication-list');
         const toast = document.getElementById('toast');
+        const debugBtn = document.getElementById('debug-btn');
 
         // Today's date for storage key
         const today = new Date().toISOString().split('T')[0];
@@ -115,6 +204,41 @@
         // Initialize
         function init() {
             renderMedications();
+            addDebugButton();
+        }
+
+        // Add debug button functionality
+        function addDebugButton() {
+            debugBtn.addEventListener('click', function() {
+                // Show debug info
+                let info = "Debug Info:\n";
+                info += "- Script is running\n";
+                info += "- Today's date: " + today + "\n";
+                info += "- localStorage available: " + (typeof localStorage !== 'undefined') + "\n";
+
+                try {
+                    localStorage.setItem('test', 'test');
+                    localStorage.removeItem('test');
+                    info += "- localStorage working: Yes\n";
+                } catch (e) {
+                    info += "- localStorage working: No (" + e.message + ")\n";
+                }
+
+                // Show taken medications
+                try {
+                    const stored = localStorage.getItem('taken_' + today);
+                    if (stored) {
+                        const takenMeds = JSON.parse(stored);
+                        info += "- Medications tracked today: " + Object.keys(takenMeds).length + "\n";
+                    } else {
+                        info += "- Medications tracked today: None\n";
+                    }
+                } catch (e) {
+                    info += "- Error reading medications: " + e.message + "\n";
+                }
+
+                alert(info);
+            });
         }
 
         // Render medication list
@@ -130,6 +254,8 @@
                 }
             } catch (e) {
                 console.error('Error loading from storage:', e);
+                // Show error visibly
+                showToast('Error: ' + e.message);
             }
 
             // Create medication list
@@ -166,13 +292,12 @@
 
                     // Add event listeners
                     const checkbox = medElement.querySelector('input');
+                    const medInfo = medElement.querySelector('.med-info');
 
-                    // Make row clickable
-                    medElement.addEventListener('click', function(e) {
-                        if (e.target !== checkbox) {
-                            checkbox.checked = !checkbox.checked;
-                            handleCheckboxChange(checkbox, medId, med.name, medElement);
-                        }
+                    // Make med-info div clickable
+                    medInfo.addEventListener('click', function() {
+                        checkbox.checked = !checkbox.checked;
+                        handleCheckboxChange(checkbox, medId, med.name, medElement);
                     });
 
                     // Handle checkbox change
@@ -199,6 +324,12 @@
                 takenMeds[medId] = checkbox.checked;
                 localStorage.setItem('taken_' + today, JSON.stringify(takenMeds));
 
+                // Add animation
+                element.classList.add('pulse');
+                setTimeout(function() {
+                    element.classList.remove('pulse');
+                }, 300);
+
                 // Update UI
                 if (checkbox.checked) {
                     element.classList.add('completed');
@@ -209,7 +340,7 @@
                 }
             } catch (e) {
                 console.error('Error saving to storage:', e);
-                alert('Error saving: ' + e.message);
+                showToast('Error saving: ' + e.message);
             }
         }
 

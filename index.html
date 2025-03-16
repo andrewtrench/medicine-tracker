@@ -117,8 +117,9 @@
         // Debug alert to see if script loads
         console.log("Script started");
 
-        // Complete medication data from your schedule
+        // Hard-coded medication data to ensure all time slots are shown
         const medicationData = [
+            // Morning medications
             {
                 timeSlot: "6:30 AM (Before Breakfast)",
                 medications: [
@@ -142,6 +143,7 @@
                     { name: "Paracetamol", instructions: "" }
                 ]
             },
+            // Afternoon medications
             {
                 timeSlot: "12:30 PM (Before Lunch)",
                 medications: [
@@ -162,6 +164,7 @@
                     { name: "Paracetamol", instructions: "" }
                 ]
             },
+            // Evening medications
             {
                 timeSlot: "6:30 PM (Before Dinner)",
                 medications: [
@@ -201,49 +204,43 @@
         // Today's date for storage key
         const today = new Date().toISOString().split('T')[0];
 
-        // Initialize
-        function init() {
+        // Show debug info
+        debugBtn.addEventListener('click', function() {
+            let info = "Debug Info:\n";
+            info += "- Script is running\n";
+            info += "- Number of time slots: " + medicationData.length + "\n";
+            info += "- Today's date: " + today + "\n";
+
+            // Check localStorage
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                info += "- localStorage working: Yes\n";
+
+                const stored = localStorage.getItem('taken_' + today);
+                if (stored) {
+                    const takenMeds = JSON.parse(stored);
+                    info += "- Medications tracked today: " + Object.keys(takenMeds).length + "\n";
+                } else {
+                    info += "- Medications tracked today: None\n";
+                }
+            } catch (e) {
+                info += "- localStorage error: " + e.message + "\n";
+            }
+
+            alert(info);
+
+            // Force refresh the display
             renderMedications();
-            addDebugButton();
-        }
-
-        // Add debug button functionality
-        function addDebugButton() {
-            debugBtn.addEventListener('click', function() {
-                // Show debug info
-                let info = "Debug Info:\n";
-                info += "- Script is running\n";
-                info += "- Today's date: " + today + "\n";
-                info += "- localStorage available: " + (typeof localStorage !== 'undefined') + "\n";
-
-                try {
-                    localStorage.setItem('test', 'test');
-                    localStorage.removeItem('test');
-                    info += "- localStorage working: Yes\n";
-                } catch (e) {
-                    info += "- localStorage working: No (" + e.message + ")\n";
-                }
-
-                // Show taken medications
-                try {
-                    const stored = localStorage.getItem('taken_' + today);
-                    if (stored) {
-                        const takenMeds = JSON.parse(stored);
-                        info += "- Medications tracked today: " + Object.keys(takenMeds).length + "\n";
-                    } else {
-                        info += "- Medications tracked today: None\n";
-                    }
-                } catch (e) {
-                    info += "- Error reading medications: " + e.message + "\n";
-                }
-
-                alert(info);
-            });
-        }
+        });
 
         // Render medication list
         function renderMedications() {
+            // Clear the current list
             medicationList.innerHTML = '';
+
+            // Show number of time slots for debugging
+            console.log("Rendering " + medicationData.length + " time slots");
 
             // Get taken medications from storage
             let takenMeds = {};
@@ -254,12 +251,13 @@
                 }
             } catch (e) {
                 console.error('Error loading from storage:', e);
-                // Show error visibly
-                showToast('Error: ' + e.message);
+                showToast('Error loading data: ' + e.message);
             }
 
             // Create medication list
-            medicationData.forEach(slot => {
+            medicationData.forEach((slot, index) => {
+                console.log("Processing time slot: " + slot.timeSlot);
+
                 const timeSlot = document.createElement('div');
                 timeSlot.className = 'time-slot';
 
@@ -291,7 +289,7 @@
                     timeSlot.appendChild(medElement);
 
                     // Add event listeners
-                    const checkbox = medElement.querySelector('input');
+                    const checkbox = medElement.querySelector(`#${medId}`);
                     const medInfo = medElement.querySelector('.med-info');
 
                     // Make med-info div clickable
@@ -355,6 +353,14 @@
         }
 
         // Initialize the app
+        function init() {
+            console.log("Initializing app");
+            renderMedications();
+        }
+
+        // Call init when the page loads
+        document.addEventListener('DOMContentLoaded', init);
+        // Also call it immediately in case DOMContentLoaded already fired
         init();
     </script>
 </body>

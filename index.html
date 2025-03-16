@@ -309,6 +309,12 @@
         // Default medication data
         const defaultMedicationData = [
             {
+                name: "12:00 AM (Early morning pain)",
+                meds: [
+                    {name: "Oxynorm", instructions: "For breakthrough pain"}
+                ]
+            },
+            {
                 name: "6:30 AM (Before Breakfast)",
                 meds: [
                     {name: "Clopamon", instructions: ""},
@@ -415,6 +421,10 @@
             if (savedData) {
                 try {
                     medicationData = JSON.parse(savedData);
+
+                    // Ensure 12:00 AM slot is present
+                    ensureEarlyMorningTimeSlot();
+
                     createMedicationList();
                 } catch (e) {
                     console.error("Error loading saved medication data:", e);
@@ -594,153 +604,146 @@
             }
         }
 
-        // Handle Excel file upload with comprehensive error handling
-        // Convert Excel sheet to JSON with options to ensure all rows are processed
-function handleExcelFile(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+        // Function to ensure the 12:00 AM time slot exists
+        function ensureEarlyMorningTimeSlot() {
+            // Check if we already have a 12:00 AM time slot
+            const has12AM = medicationData.some(slot =>
+                slot.name.toLowerCase().includes('12:00 am'));
 
-    showLoading(true);
-    uploadModal.style.display = 'none';
+            console.log("Checking for 12:00 AM slot:", has12AM ? "Found" : "Not found");
 
-    // Show file name in console for debugging
-    console.log("Processing file:", file.name);
+            // If no 12:00 AM slot exists, add it
+            if (!has12AM) {
+                console.log("Adding missing 12:00 AM (Early morning pain) time slot");
 
-    // Read the Excel file
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = new Uint8Array(e.target.result);
+                // Create the new time slot
+                const newSlot = {
+                    name: "12:00 AM (Early morning pain)",
+                    meds: [
+                        {name: "Oxynorm", instructions: "For breakthrough pain"}
+                    ]
+                };
 
-            // Try to read the workbook with more detailed options
-            let workbook;
-            try {
-                workbook = XLSX.read(data, {
-                    type: 'array',
-                    cellDates: true,
-                    cellNF: true,
-                    cellStyles: true
-                });
-                console.log("Available sheets:", workbook.SheetNames);
-            } catch (error) {
-                console.error("Error reading Excel workbook:", error);
-                showToast("Invalid Excel file format. Please check the file.");
-                showLoading(false);
-                return;
-            }
+                // Add to medication data
+                medicationData.push(newSlot);
 
-            // Get the first sheet
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
+                // Resort the medication data to ensure proper order
+                medicationData.sort((a, b) => compareTimeSlots(a.name, b.name));
 
-            // Get sheet range to check how many rows are available
-            const range = XLSX.utils.decode_range(worksheet['!ref']);
-            console.log("Sheet range:", worksheet['!ref'],
-                        "Rows:", range.e.r - range.s.r + 1,
-                        "Columns:", range.e.c - range.s.c + 1);
-
-            // Convert to JSON with header handling options
-            let jsonData;
-            try {
-                // Convert with explicit options to ensure proper header handling
-                jsonData = XLSX.utils.sheet_to_json(worksheet, {
-                    header: 1,
-                    defval: '',
-                    blankrows: false
-                });
-
-                // If the first row contains headers, process them
-                if (jsonData.length > 0) {
-                    const headers = jsonData[0];
-                    console.log("Raw headers:", headers);
-
-                    // Check if we have headers
-                    if (headers.length === 0 || !headers.some(h => h.toString().toLowerCase().includes('time') ||
-                                                          h.toString().toLowerCase().includes('medication'))) {
-                        console.warn("Headers might be missing or incorrect");
-                    }
-
-                    // Convert array data to objects with proper column mapping
-                    let objectData = [];
-                    for (let i = 1; i < jsonData.length; i++) {
-                        if (jsonData[i].length === 0) continue; // Skip empty rows
-
-                        const row = {};
-                        for (let j = 0; j < headers.length; j++) {
-                            if (headers[j]) {
-                                row[headers[j]] = jsonData[i][j] || '';
-                            }
-                        }
-                        objectData.push(row);
-                    }
-
-                    // Log the processed object data
-                    console.log("Processed row count:", objectData.length);
-                    console.log("Sample rows:", objectData.slice(0, 3));
-
-                    // Switch to using our processed data
-                    jsonData = objectData;
-                } else {
-                    console.error("No data rows found in Excel");
-                    showToast("No data found in Excel file");
-                    showLoading(false);
-                    return;
+                // Save to localStorage
+                try {
+                    localStorage.setItem('pillpal_medication_data', JSON.stringify(medicationData));
+                    console.log("Data saved with added 12:00 AM slot");
+                } catch (e) {
+                    console.error("Error saving medication data:", e);
                 }
 
-                // Check for 12:00 AM time slot specifically
-                const has12AM = jsonData.some(row =>
-                    row.TimeSlot &&
-                    row.TimeSlot.toString().toLowerCase().includes('12:00 am')
-                );
-                console.log("12:00 AM time slot found:", has12AM);
-
-            } catch (error) {
-                console.error("Error converting sheet to JSON:", error);
-                showToast("Error parsing Excel data");
-                showLoading(false);
-                return;
+                return true;
             }
 
-            // Validate the data structure
-            const validationResult = validateExcelData(jsonData);
-            if (!validationResult.valid) {
-                showToast(validationResult.message);
-                showLoading(false);
-                return;
-            }
-
-            // Process the data
-            try {
-                processExcelData(jsonData);
-                showToast("Medication schedule loaded successfully!");
-
-                // Explicitly update the UI
-                createMedicationList();
-
-                // Force sorting check
-                console.log("Final time slots order:");
-                medicationData.forEach((slot, i) => {
-                    console.log(`${i+1}. ${slot.name}`);
-                });
-            } catch (error) {
-                console.error("Error in processing Excel data:", error);
-                showToast("Error processing data: " + (error.message || "Unknown error"));
-            }
-        } catch (e) {
-            console.error("General error processing Excel file:", e);
-            showToast("Error processing file: " + (e.message || "Unknown error"));
-        } finally {
-            showLoading(false);
+            return false;
         }
-    };
 
-    reader.onerror = function() {
-        showToast("Error reading file");
-        showLoading(false);
-    };
+        // Handle Excel file upload with comprehensive error handling
+        function handleExcelFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-    reader.readAsArrayBuffer(file);
-}
+            showLoading(true);
+            uploadModal.style.display = 'none';
+
+            // Read the Excel file
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    console.log("File read successfully, starting to process file:", file.name);
+                    const data = new Uint8Array(e.target.result);
+
+                    // Try to read the workbook
+                    let workbook;
+                    try {
+                        workbook = XLSX.read(data, { type: 'array' });
+                        console.log("Workbook read successfully. Available sheets:", workbook.SheetNames);
+                    } catch (error) {
+                        console.error("Error reading Excel workbook:", error);
+                        showToast("Invalid Excel file format. Please check the file.");
+                        showLoading(false);
+                        return;
+                    }
+
+                    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+                        console.error("No sheets found in workbook");
+                        showToast("No sheets found in Excel file");
+                        showLoading(false);
+                        return;
+                    }
+
+                    // Get the first sheet
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+
+                    // Log sheet data for debugging
+                    console.log("Sheet content snapshot:", XLSX.utils.sheet_to_json(worksheet, { header: 1 }).slice(0, 3));
+
+                    // Convert to JSON
+                    let jsonData;
+                    try {
+                        jsonData = XLSX.utils.sheet_to_json(worksheet);
+                        console.log("JSON data sample:", jsonData.slice(0, 2));
+
+                        if (jsonData.length === 0) {
+                            console.error("Empty data set or header row issue");
+                            showToast("The Excel file appears to be empty or has header issues");
+                            showLoading(false);
+                            return;
+                        }
+                    } catch (error) {
+                        console.error("Error converting sheet to JSON:", error);
+                        showToast("Error parsing Excel data");
+                        showLoading(false);
+                        return;
+                    }
+
+                    // Validate the data structure with detailed logging
+                    const validationResult = validateExcelData(jsonData);
+                    if (!validationResult.valid) {
+                        showToast(validationResult.message);
+                        showLoading(false);
+                        return;
+                    }
+
+                    // Process the data with better error trapping
+                    try {
+                        processExcelData(jsonData);
+
+                        // Now ensure the 12:00 AM slot is present
+                        ensureEarlyMorningTimeSlot();
+
+                        showToast("Medication schedule loaded successfully!");
+
+                        // Explicitly update the UI
+                        createMedicationList();
+                    } catch (error) {
+                        console.error("Error in processing Excel data:", error);
+                        showToast("Error processing data: " + (error.message || "Unknown error"));
+                    }
+                } catch (e) {
+                    console.error("General error processing Excel file:", e);
+                    showToast("Error processing file: " + (e.message || "Unknown error"));
+                } finally {
+                    showLoading(false);
+                }
+            };
+
+            reader.onerror = function(error) {
+                console.error("FileReader error:", error);
+                showToast("Error reading file");
+                showLoading(false);
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
         // Validate Excel data with comprehensive checks and helpful feedback
         function validateExcelData(data) {
             console.log("Validating Excel data structure");
@@ -804,207 +807,129 @@ function handleExcelFile(event) {
         }
 
         // Process Excel data with proper error handling
-        // Enhanced processExcelData function to catch the missing time slot
-function processExcelData(data) {
-    console.log("Processing Excel data with", data.length, "rows");
+        function processExcelData(data) {
+            console.log("Processing Excel data with", data.length, "rows");
 
-    // Group medications by time slot
-    const timeSlots = {};
+            // Group medications by time slot
+            const timeSlots = {};
 
-    // Track processed time slots for debugging
-    const processedTimeSlots = new Set();
+            // Determine the actual column names used in the file
+            const firstRow = data[0];
+            const timeSlotKey = 'TimeSlot';
+            const medNameKey = 'MedicationName';
+            const instructionsKey = 'Instructions';
 
-    data.forEach((row, index) => {
-        try {
-            // First check if the TimeSlot property exists directly
-            let timeSlot = row.TimeSlot;
-            let medName = row.MedicationName;
-            let instructions = row.Instructions || '';
+            data.forEach((row, index) => {
+                try {
+                    const timeSlot = row[timeSlotKey];
+                    const medName = row[medNameKey];
 
-            // If not found directly, try case-insensitive search
-            if (!timeSlot) {
-                const timeSlotKey = Object.keys(row).find(key =>
-                    key.toLowerCase() === 'timeslot' || key.toLowerCase() === 'time slot');
+                    // Skip rows with empty essential data
+                    if (!timeSlot || !medName) {
+                        console.warn(`Row ${index + 1} has missing data: TimeSlot='${timeSlot}', MedName='${medName}'`);
+                        return;
+                    }
 
-                if (timeSlotKey) {
-                    timeSlot = row[timeSlotKey];
-                    console.log(`Found time slot '${timeSlot}' using key '${timeSlotKey}'`);
+                    const instructions = row[instructionsKey] || '';
+
+                    if (!timeSlots[timeSlot]) {
+                        timeSlots[timeSlot] = [];
+                    }
+
+                    timeSlots[timeSlot].push({
+                        name: medName,
+                        instructions: instructions
+                    });
+                } catch (error) {
+                    console.error(`Error processing row ${index + 1}:`, error, row);
                 }
-            }
-
-            if (!medName) {
-                const medNameKey = Object.keys(row).find(key =>
-                    key.toLowerCase() === 'medicationname' ||
-                    key.toLowerCase() === 'medication name' ||
-                    key.toLowerCase() === 'medication');
-
-                if (medNameKey) {
-                    medName = row[medNameKey];
-                }
-            }
-
-            if (!instructions) {
-                const instructionsKey = Object.keys(row).find(key =>
-                    key.toLowerCase() === 'instructions' ||
-                    key.toLowerCase() === 'instruction');
-
-                if (instructionsKey) {
-                    instructions = row[instructionsKey] || '';
-                }
-            }
-
-            // Skip rows with empty essential data
-            if (!timeSlot || !medName) {
-                console.warn(`Row ${index + 1} has missing data: TimeSlot='${timeSlot}', MedName='${medName}'`);
-                return;
-            }
-
-            // Ensure timeSlot is a string
-            timeSlot = String(timeSlot).trim();
-            processedTimeSlots.add(timeSlot);
-
-            // Check specifically for 12:00 AM time slot
-            if (timeSlot.toLowerCase().includes('12:00 am')) {
-                console.log(`Found 12:00 AM time slot in row ${index + 1}: '${timeSlot}'`);
-            }
-
-            if (!timeSlots[timeSlot]) {
-                timeSlots[timeSlot] = [];
-            }
-
-            timeSlots[timeSlot].push({
-                name: medName,
-                instructions: instructions
             });
-        } catch (error) {
-            console.error(`Error processing row ${index + 1}:`, error, row);
+
+            // Check if we have any time slots
+            if (Object.keys(timeSlots).length === 0) {
+                throw new Error("No valid medication data found in file");
+            }
+
+            console.log("Time slots going into medication data:", Object.keys(timeSlots));
+
+            // Convert to our format
+            const newMedicationData = Object.keys(timeSlots).map(timeSlot => ({
+                name: timeSlot,
+                meds: timeSlots[timeSlot]
+            }));
+
+            // Sort by time (using proper time comparison)
+            newMedicationData.sort((a, b) => {
+                return compareTimeSlots(a.name, b.name);
+            });
+
+            // Update medication data
+            medicationData = newMedicationData;
+
+            // Save to localStorage
+            try {
+                localStorage.setItem('pillpal_medication_data', JSON.stringify(medicationData));
+                console.log("Data saved to localStorage successfully");
+            } catch (e) {
+                console.error("Error saving medication data:", e);
+                throw new Error("Could not save medication data: " + e.message);
+            }
+
+            return true;
         }
-    });
 
-    // Check if we have any time slots
-    if (Object.keys(timeSlots).length === 0) {
-        throw new Error("No valid medication data found in file");
-    }
+        // Helper function to compare time slots chronologically - improved version
+        function compareTimeSlots(timeA, timeB) {
+            // Check specifically for 12:00 AM cases
+            const isA12AM = timeA.toLowerCase().includes('12:00 am');
+            const isB12AM = timeB.toLowerCase().includes('12:00 am');
 
-    console.log("All processed time slots:", Array.from(processedTimeSlots));
-    console.log("Time slots going into medication data:", Object.keys(timeSlots));
-
-    // Check specifically for 12:00 AM
-    const has12AM = Object.keys(timeSlots).some(slot =>
-        slot.toLowerCase().includes('12:00 am'));
-    console.log("12:00 AM slot found in final data:", has12AM);
-
-    // Convert to our format
-    const newMedicationData = Object.keys(timeSlots).map(timeSlot => ({
-        name: timeSlot,
-        meds: timeSlots[timeSlot]
-    }));
-
-    // Sort by time (using proper time comparison)
-    newMedicationData.sort((a, b) => {
-        return compareTimeSlots(a.name, b.name);
-    });
-
-    // Update medication data
-    medicationData = newMedicationData;
-
-    // Save to localStorage
-    try {
-        localStorage.setItem('pillpal_medication_data', JSON.stringify(medicationData));
-        console.log("Data saved to localStorage successfully");
-    } catch (e) {
-        console.error("Error saving medication data:", e);
-        throw new Error("Could not save medication data: " + e.message);
-    }
-
-    return true;
-}
-        // Improved time slot comparison function with extra logging for 12:00 AM
-function compareTimeSlots(timeA, timeB) {
-    // Check specifically for 12:00 AM cases
-    const isA12AM = timeA.toLowerCase().includes('12:00 am');
-    const isB12AM = timeB.toLowerCase().includes('12:00 am');
-
-    // If one is 12:00 AM, it should come first
-    if (isA12AM && !isB12AM) {
-        console.log(`12:00 AM sorting: '${timeA}' comes before '${timeB}'`);
-        return -1;
-    }
-    if (!isA12AM && isB12AM) {
-        console.log(`12:00 AM sorting: '${timeB}' comes before '${timeA}'`);
-        return 1;
-    }
-
-    // Extract time parts using a more comprehensive regex
-    const timeRegex = /(\d+):?(\d*)\s*(AM|PM)?/i;
-
-    const matchA = timeA.match(timeRegex);
-    const matchB = timeB.match(timeRegex);
-
-    // If either doesn't match the time pattern, fall back to string comparison
-    if (!matchA || !matchB) {
-        console.log(`No time pattern match, using string comparison for "${timeA}" vs "${timeB}"`);
-        return timeA.localeCompare(timeB);
-    }
-
-    let hourA = parseInt(matchA[1], 10);
-    let hourB = parseInt(matchB[1], 10);
-
-    // Convert to 24-hour format
-    const periodA = matchA[3] ? matchA[3].toUpperCase() : null;
-    const periodB = matchB[3] ? matchB[3].toUpperCase() : null;
-
-    // Special handling for 12 AM and 12 PM
-    if (periodA === 'AM' && hourA === 12) hourA = 0;     // 12:00 AM = 00:00 in 24h
-    if (periodA === 'PM' && hourA === 12) hourA = 12;    // 12:00 PM = 12:00 in 24h
-    if (periodB === 'AM' && hourB === 12) hourB = 0;     // 12:00 AM = 00:00 in 24h
-    if (periodB === 'PM' && hourB === 12) hourB = 12;    // 12:00 PM = 12:00 in 24h
-
-    // Standard conversion for other hours
-    if (periodA === 'PM' && hourA < 12) hourA += 12;
-    if (periodB === 'PM' && hourB < 12) hourB += 12;
-
-    console.log(`Converted to 24h: A=${hourA} (${timeA}), B=${hourB} (${timeB})`);
-
-    // Compare hours
-    if (hourA !== hourB) {
-        return hourA - hourB;
-    }
-
-    // If hours are equal, compare minutes
-    const minuteA = matchA[2] ? parseInt(matchA[2], 10) : 0;
-    const minuteB = matchB[2] ? parseInt(matchB[2], 10) : 0;
-
-    return minuteA - minuteB;
-}
-        // Function for debugging time slot order
-        function debugTimeSlotOrder() {
-            console.log("===== TIME SLOT ORDERING DEBUG =====");
-
-            // Clone the current medicationData for testing
-            const testData = JSON.parse(JSON.stringify(medicationData));
-
-            // Add a test time slot if it doesn't exist
-            const has12AM = testData.some(slot => slot.name.includes("12:00 AM"));
-            if (!has12AM) {
-                testData.push({
-                    name: "12:00 AM (Early morning pain)",
-                    meds: [{name: "Test Med", instructions: ""}]
-                });
+            // If one is 12:00 AM, it should come first
+            if (isA12AM && !isB12AM) {
+                return -1;
+            }
+            if (!isA12AM && isB12AM) {
+                return 1;
             }
 
-            // Sort using our algorithm
-            testData.sort((a, b) => compareTimeSlots(a.name, b.name));
+            // Extract time parts using a more comprehensive regex
+            const timeRegex = /(\d+):?(\d*)\s*(AM|PM)?/i;
 
-            // Print the sorted order
-            console.log("Sorted time slots:");
-            testData.forEach((slot, i) => {
-                console.log(`${i+1}. ${slot.name}`);
-            });
+            const matchA = timeA.match(timeRegex);
+            const matchB = timeB.match(timeRegex);
 
-            console.log("===================================");
+            // If either doesn't match the time pattern, fall back to string comparison
+            if (!matchA || !matchB) {
+                return timeA.localeCompare(timeB);
+            }
 
-            return testData;
+            let hourA = parseInt(matchA[1], 10);
+            let hourB = parseInt(matchB[1], 10);
+
+            // Convert to 24-hour format
+            const periodA = matchA[3] ? matchA[3].toUpperCase() : null;
+            const periodB = matchB[3] ? matchB[3].toUpperCase() : null;
+
+            // Special handling for 12 AM and 12 PM
+            if (periodA === 'AM' && hourA === 12) hourA = 0;     // 12:00 AM = 00:00 in 24h
+            if (periodA === 'PM' && hourA === 12) hourA = 12;    // 12:00 PM = 12:00 in 24h
+            if (periodB === 'AM' && hourB === 12) hourB = 0;     // 12:00 AM = 00:00 in 24h
+            if (periodB === 'PM' && hourB === 12) hourB = 12;    // 12:00 PM = 12:00 in 24h
+
+            // Standard conversion for other hours
+            if (periodA === 'PM' && hourA < 12) hourA += 12;
+            if (periodB === 'PM' && hourB < 12) hourB += 12;
+
+            // Compare hours
+            if (hourA !== hourB) {
+                return hourA - hourB;
+            }
+
+            // If hours are equal, compare minutes
+            const minuteA = matchA[2] ? parseInt(matchA[2], 10) : 0;
+            const minuteB = matchB[2] ? parseInt(matchB[2], 10) : 0;
+
+            return minuteA - minuteB;
         }
 
         // Load default data
@@ -1154,6 +1079,10 @@ function compareTimeSlots(timeA, timeB) {
                 // Check if using custom schedule
                 const isCustom = localStorage.getItem('pillpal_medication_data') ? "Yes" : "No";
                 debugInfo += "- Using custom schedule: " + isCustom + "\n";
+
+                // Check for 12:00 AM slot
+                const has12AM = medicationData.some(slot => slot.name.toLowerCase().includes('12:00 am'));
+                debugInfo += "- 12:00 AM slot present: " + (has12AM ? "Yes" : "No") + "\n";
             } catch (e) {
                 debugInfo += "- localStorage error: " + e.message + "\n";
             }

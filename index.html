@@ -5,119 +5,449 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medication Tracker</title>
     <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --background-color: #f5f5f5;
+            --card-color: #ffffff;
+            --text-color: #202124;
+            --border-color: #dadce0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            padding-bottom: 80px;
         }
-        h1 {
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
             text-align: center;
-            color: #4285f4;
-            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+
+        .date-selector {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background-color: var(--card-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .date-selector button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--primary-color);
+            padding: 5px 10px;
+        }
+
         .time-slot {
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
+            margin: 1rem;
+            background-color: var(--card-color);
             border-radius: 8px;
             overflow: hidden;
-            background-color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
-        .time-header {
-            background-color: #4285f4;
+
+        .time-slot-header {
+            padding: 0.75rem;
+            background-color: var(--primary-color);
             color: white;
-            padding: 12px 15px;
             font-weight: bold;
-            font-size: 16px;
-        }
-        .medication {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
             display: flex;
+            justify-content: space-between;
             align-items: center;
         }
+
+        .time-slot-header.upcoming {
+            background-color: #fbbc05;
+        }
+
+        .time-slot-content {
+            padding: 0.5rem 0;
+        }
+
+        .medication {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
         .medication:last-child {
             border-bottom: none;
         }
-        .medication input {
-            margin-right: 15px;
+
+        .medication-checkbox {
+            margin-right: 1rem;
             width: 24px;
             height: 24px;
+            accent-color: var(--secondary-color);
             cursor: pointer;
         }
-        .medication.completed .med-name {
-            text-decoration: line-through;
-            color: #999;
+
+        .medication-info {
+            flex-grow: 1;
+            cursor: pointer;
         }
+
+        .medication-name {
+            font-weight: 500;
+        }
+
+        .medication-instructions {
+            font-size: 0.8rem;
+            color: #5f6368;
+            margin-top: 0.25rem;
+        }
+
+        .medication.completed .medication-name {
+            text-decoration: line-through;
+            color: #5f6368;
+        }
+
+        nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--card-color);
+            display: flex;
+            justify-content: space-around;
+            padding: 0.75rem 0;
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        nav button {
+            background: none;
+            border: none;
+            font-size: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-color);
+            cursor: pointer;
+        }
+
+        nav button.active {
+            color: var(--primary-color);
+        }
+
+        nav button span {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Stats page styles */
+        .stats-container {
+            padding: 1rem;
+        }
+
+        .stats-card {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-card h3 {
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .progress-bar {
+            height: 20px;
+            background-color: var(--border-color);
+            border-radius: 10px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--secondary-color);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        /* Settings page styles */
+        .settings-container {
+            padding: 1rem;
+        }
+
+        .setting-item {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .setting-item h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            margin-top: 0.5rem;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--secondary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .notification-timing {
+            display: flex;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+
+        .notification-timing input {
+            width: 50px;
+            margin-right: 0.5rem;
+            padding: 0.25rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        /* Toast notification */
         .toast {
             position: fixed;
-            bottom: 20px;
+            bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
             background-color: #333;
             color: white;
-            padding: 12px 20px;
+            padding: 10px 20px;
             border-radius: 4px;
-            display: none;
-            z-index: 100;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            max-width: 80%;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        .med-info {
-            flex-grow: 1;
-            cursor: pointer;
+
+        .toast.show {
+            opacity: 1;
         }
-        .med-name {
-            font-weight: bold;
+
+        /* Animation for new day */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
-        .med-instructions {
-            font-size: 0.85em;
-            color: #666;
-            margin-top: 4px;
+
+        .pulse {
+            animation: pulse 0.3s ease-in-out;
         }
+
+        /* Debug button */
         .debug-btn {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: rgba(0,0,0,0.6);
+            bottom: 80px;
+            right: 10px;
+            background-color: rgba(0,0,0,0.5);
             color: white;
-            width: 36px;
-            height: 36px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
-            text-align: center;
-            line-height: 36px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             font-weight: bold;
             z-index: 100;
             cursor: pointer;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
-        /* Add simple animation for when medications are checked */
-        @keyframes checkPulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+
+        /* Make list items nicer in stats */
+        ul {
+            padding-left: 20px;
         }
-        .pulse {
-            animation: checkPulse 0.3s ease-in-out;
+
+        li {
+            margin-bottom: 8px;
         }
     </style>
 </head>
 <body>
-    <h1>Medication Tracker</h1>
+    <header>
+        <h1>Medication Tracker</h1>
+    </header>
 
-    <div id="medication-list">
-        <!-- Medications will be populated here -->
+    <div id="today-page">
+        <div class="date-selector">
+            <button id="prev-day">◀</button>
+            <h2 id="current-date">Today</h2>
+            <button id="next-day">▶</button>
+        </div>
+        <div id="medication-list">
+            <!-- Time slots and medications will be populated here -->
+        </div>
     </div>
 
-    <div id="toast" class="toast">Message</div>
+    <div id="stats-page" class="hidden">
+        <div class="stats-container">
+            <div class="stats-card">
+                <h3>Today's Progress</h3>
+                <p id="today-percentage">0%</p>
+                <div class="progress-bar">
+                    <div id="today-progress" class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="stats-card">
+                <h3>Weekly Adherence</h3>
+                <p id="weekly-percentage">0%</p>
+                <div class="progress-bar">
+                    <div id="weekly-progress" class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="stats-card">
+                <h3>Most Missed Medications</h3>
+                <ul id="missed-medications">
+                    <!-- Will be populated with JavaScript -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-page" class="hidden">
+        <div class="settings-container">
+            <div class="setting-item">
+                <h3>Notifications</h3>
+                <p>Receive reminders for medication times</p>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="notifications-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <h3>Reminder Time</h3>
+                <p>Get notified before medication time</p>
+                <div class="notification-timing">
+                    <input type="number" id="reminder-minutes" min="0" max="60" value="15">
+                    <span>minutes before</span>
+                </div>
+            </div>
+            <div class="setting-item">
+                <h3>Reset Data</h3>
+                <p>Clear all medication history</p>
+                <button id="reset-data" style="background-color: #ea4335; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; margin-top: 0.5rem; cursor: pointer;">Reset Data</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Medication marked as taken!</div>
+
     <div class="debug-btn" id="debug-btn">?</div>
 
-    <script>
-        // Debug alert to see if script loads
-        console.log("Script started");
+    <nav>
+        <button id="today-btn" class="active">
+            <span>📅</span>
+            Today
+        </button>
+        <button id="stats-btn">
+            <span>📊</span>
+            Stats
+        </button>
+        <button id="settings-btn">
+            <span>⚙️</span>
+            Settings
+        </button>
+    </nav>
 
-        // Hard-coded medication data to ensure all time slots are shown
+    <script>
+        // Console log for debugging
+        console.log("Script loaded - " + new Date().toISOString());
+
+        // DOM elements
+        const todayPage = document.getElementById('today-page');
+        const statsPage = document.getElementById('stats-page');
+        const settingsPage = document.getElementById('settings-page');
+        const todayBtn = document.getElementById('today-btn');
+        const statsBtn = document.getElementById('stats-btn');
+        const settingsBtn = document.getElementById('settings-btn');
+        const medicationList = document.getElementById('medication-list');
+        const currentDateElement = document.getElementById('current-date');
+        const prevDayButton = document.getElementById('prev-day');
+        const nextDayButton = document.getElementById('next-day');
+        const resetDataButton = document.getElementById('reset-data');
+        const notificationsToggle = document.getElementById('notifications-toggle');
+        const reminderMinutes = document.getElementById('reminder-minutes');
+        const toast = document.getElementById('toast');
+        const todayPercentage = document.getElementById('today-percentage');
+        const todayProgress = document.getElementById('today-progress');
+        const weeklyPercentage = document.getElementById('weekly-percentage');
+        const weeklyProgress = document.getElementById('weekly-progress');
+        const missedMedications = document.getElementById('missed-medications');
+        const debugBtn = document.getElementById('debug-btn');
+
+        // Current date and selected date
+        let currentDate = new Date();
+        let selectedDate = new Date();
+
+        // Medication data
         const medicationData = [
             // Morning medications
             {
@@ -196,172 +526,462 @@
             }
         ];
 
-        // DOM Elements
-        const medicationList = document.getElementById('medication-list');
-        const toast = document.getElementById('toast');
-        const debugBtn = document.getElementById('debug-btn');
+        // Initialize the app
+        function init() {
+            console.log("Initializing app");
+            showDate();
+            renderMedicationList();
+            updateStats();
+            setupEventListeners();
 
-        // Today's date for storage key
-        const today = new Date().toISOString().split('T')[0];
-
-        // Show debug info
-        debugBtn.addEventListener('click', function() {
-            let info = "Debug Info:\n";
-            info += "- Script is running\n";
-            info += "- Number of time slots: " + medicationData.length + "\n";
-            info += "- Today's date: " + today + "\n";
-
-            // Check localStorage
-            try {
-                localStorage.setItem('test', 'test');
-                localStorage.removeItem('test');
-                info += "- localStorage working: Yes\n";
-
-                const stored = localStorage.getItem('taken_' + today);
-                if (stored) {
-                    const takenMeds = JSON.parse(stored);
-                    info += "- Medications tracked today: " + Object.keys(takenMeds).length + "\n";
-                } else {
-                    info += "- Medications tracked today: None\n";
-                }
-            } catch (e) {
-                info += "- localStorage error: " + e.message + "\n";
+            // Load settings from localStorage
+            if (localStorage.getItem('notificationsEnabled') === 'false') {
+                notificationsToggle.checked = false;
             }
 
-            alert(info);
+            if (localStorage.getItem('reminderMinutes')) {
+                reminderMinutes.value = localStorage.getItem('reminderMinutes');
+            }
 
-            // Force refresh the display
-            renderMedications();
-        });
+            // Check for new day
+            checkForNewDay();
+        }
 
-        // Render medication list
-        function renderMedications() {
-            // Clear the current list
+        // Check if it's a new day
+        function checkForNewDay() {
+            const lastDateStr = localStorage.getItem('lastDate');
+            const today = new Date().toDateString();
+
+            if (lastDateStr !== today) {
+                // It's a new day
+                localStorage.setItem('lastDate', today);
+
+                // Reset the view to today
+                selectedDate = new Date();
+                showDate();
+                renderMedicationList();
+
+                // Show toast message
+                showToast('New day started - ready to track medications!');
+            }
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Navigation between pages
+            todayBtn.addEventListener('click', () => {
+                todayPage.classList.remove('hidden');
+                statsPage.classList.add('hidden');
+                settingsPage.classList.add('hidden');
+                todayBtn.classList.add('active');
+                statsBtn.classList.remove('active');
+                settingsBtn.classList.remove('active');
+            });
+
+            statsBtn.addEventListener('click', () => {
+                todayPage.classList.add('hidden');
+                statsPage.classList.remove('hidden');
+                settingsPage.classList.add('hidden');
+                todayBtn.classList.remove('active');
+                statsBtn.classList.add('active');
+                settingsBtn.classList.remove('active');
+                updateStats();
+            });
+
+            settingsBtn.addEventListener('click', () => {
+                todayPage.classList.add('hidden');
+                statsPage.classList.add('hidden');
+                settingsPage.classList.remove('hidden');
+                todayBtn.classList.remove('active');
+                statsBtn.classList.remove('active');
+                settingsBtn.classList.add('active');
+            });
+
+            // Date navigation
+            prevDayButton.addEventListener('click', () => {
+                selectedDate.setDate(selectedDate.getDate() - 1);
+                showDate();
+                renderMedicationList();
+            });
+
+            nextDayButton.addEventListener('click', () => {
+                selectedDate.setDate(selectedDate.getDate() + 1);
+                showDate();
+                renderMedicationList();
+            });
+
+            // Settings page functionality
+            notificationsToggle.addEventListener('change', () => {
+                localStorage.setItem('notificationsEnabled', notificationsToggle.checked);
+            });
+
+            reminderMinutes.addEventListener('change', () => {
+                localStorage.setItem('reminderMinutes', reminderMinutes.value);
+            });
+
+            resetDataButton.addEventListener('click', () => {
+                if (confirm('Are you sure you want to reset all medication data? This cannot be undone.')) {
+                    // Clear all medication data but keep settings
+                    const notificationsEnabled = localStorage.getItem('notificationsEnabled');
+                    const reminderMinutesValue = localStorage.getItem('reminderMinutes');
+
+                    // Get all keys
+                    const keysToRemove = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key.startsWith('taken_')) {
+                            keysToRemove.push(key);
+                        }
+                    }
+
+                    // Remove them
+                    keysToRemove.forEach(key => localStorage.removeItem(key));
+
+                    // Restore settings
+                    localStorage.setItem('notificationsEnabled', notificationsEnabled);
+                    localStorage.setItem('reminderMinutes', reminderMinutesValue);
+
+                    // Refresh the view
+                    selectedDate = new Date();
+                    showDate();
+                    renderMedicationList();
+                    updateStats();
+
+                    showToast('All medication data has been reset');
+                }
+            });
+
+            // Debug button
+            debugBtn.addEventListener('click', function() {
+                let info = "Debug Info:\n";
+                info += "- Script is running\n";
+                info += "- Number of time slots: " + medicationData.length + "\n";
+                info += "- Today's date: " + new Date().toISOString().split('T')[0] + "\n";
+                info += "- Selected date: " + selectedDate.toISOString().split('T')[0] + "\n";
+
+                // Check localStorage
+                try {
+                    localStorage.setItem('test', 'test');
+                    localStorage.removeItem('test');
+                    info += "- localStorage working: Yes\n";
+
+                    // Count stored dates
+                    let storedDates = 0;
+                    for (let i = 0; i < localStorage.length; i++) {
+                        if (localStorage.key(i).startsWith('taken_')) {
+                            storedDates++;
+                        }
+                    }
+                    info += "- Dates with stored data: " + storedDates + "\n";
+
+                    const dateString = selectedDate.toISOString().split('T')[0];
+                    const stored = localStorage.getItem('taken_' + dateString);
+                    if (stored) {
+                        const takenMeds = JSON.parse(stored);
+                        info += "- Medications tracked today: " + Object.keys(takenMeds).length + "\n";
+                    } else {
+                        info += "- Medications tracked today: None\n";
+                    }
+                } catch (e) {
+                    info += "- localStorage error: " + e.message + "\n";
+                }
+
+                alert(info);
+            });
+        }
+
+        // Display the selected date
+        function showDate() {
+            const today = new Date();
+
+            // Format date as "Today", "Yesterday", "Tomorrow", or "Day, Month Date"
+            if (selectedDate.toDateString() === today.toDateString()) {
+                currentDateElement.textContent = 'Today';
+            } else if (selectedDate.toDateString() === new Date(today.setDate(today.getDate() - 1)).toDateString()) {
+                currentDateElement.textContent = 'Yesterday';
+            } else if (selectedDate.toDateString() === new Date(new Date().setDate(new Date().getDate() + 1)).toDateString()) {
+                currentDateElement.textContent = 'Tomorrow';
+            } else {
+                const options = { weekday: 'long', month: 'short', day: 'numeric' };
+                currentDateElement.textContent = selectedDate.toLocaleDateString('en-US', options);
+            }
+        }
+
+        // Render medication list for the selected date
+        function renderMedicationList() {
             medicationList.innerHTML = '';
 
-            // Show number of time slots for debugging
-            console.log("Rendering " + medicationData.length + " time slots");
+            // Format date string for localStorage key
+            const dateString = selectedDate.toISOString().split('T')[0];
 
-            // Get taken medications from storage
-            let takenMeds = {};
+            // Get taken medications for this date
+            let takenMedications = {};
             try {
-                const stored = localStorage.getItem('taken_' + today);
+                const stored = localStorage.getItem('taken_' + dateString);
                 if (stored) {
-                    takenMeds = JSON.parse(stored);
+                    takenMedications = JSON.parse(stored);
                 }
             } catch (e) {
                 console.error('Error loading from storage:', e);
-                showToast('Error loading data: ' + e.message);
             }
 
-            // Create medication list
-            medicationData.forEach((slot, index) => {
-                console.log("Processing time slot: " + slot.timeSlot);
+            medicationData.forEach(timeSlotData => {
+                const timeSlotElement = document.createElement('div');
+                timeSlotElement.className = 'time-slot';
 
-                const timeSlot = document.createElement('div');
-                timeSlot.className = 'time-slot';
+                // Extract time for sorting and displaying
+                const timeMatch = timeSlotData.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                let timeForDisplay = timeSlotData.timeSlot;
+                let timeForSorting = 0;
 
-                // Time header
-                const timeHeader = document.createElement('div');
-                timeHeader.className = 'time-header';
-                timeHeader.textContent = slot.timeSlot;
-                timeSlot.appendChild(timeHeader);
+                if (timeMatch) {
+                    let hours = parseInt(timeMatch[1]);
+                    const minutes = parseInt(timeMatch[2]);
+                    const period = timeMatch[3].toUpperCase();
 
-                // Medications in this time slot
-                slot.medications.forEach(med => {
-                    const medId = `${slot.timeSlot}-${med.name}`;
-                    const isTaken = takenMeds[medId] === true;
+                    if (period === 'PM' && hours < 12) hours += 12;
+                    if (period === 'AM' && hours === 12) hours = 0;
 
-                    const medElement = document.createElement('div');
-                    medElement.className = 'medication';
+                    timeForSorting = hours * 60 + minutes;
+                }
+
+                // Check if this time slot is past or upcoming
+                const now = new Date();
+                const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+                let timeStatus = '';
+
+                if (selectedDate.toDateString() === now.toDateString()) {
+                    if (timeForSorting < currentTimeInMinutes) {
+                        timeStatus = 'Past';
+                    } else if (timeForSorting - currentTimeInMinutes <= 30) {
+                        timeStatus = 'Upcoming';
+                    }
+                }
+
+                // Time slot header
+                const timeSlotHeader = document.createElement('div');
+                timeSlotHeader.className = 'time-slot-header';
+
+                // Add time status indicator if needed
+                if (timeStatus === 'Upcoming') {
+                    timeSlotHeader.className += ' upcoming';
+                }
+
+                if (timeStatus) {
+                    timeSlotHeader.innerHTML = `
+                        <span>${timeForDisplay}</span>
+                        <span>${timeStatus}</span>
+                    `;
+                } else {
+                    timeSlotHeader.innerHTML = `<span>${timeForDisplay}</span>`;
+                }
+
+                timeSlotElement.appendChild(timeSlotHeader);
+
+                // Time slot content (medications)
+                const timeSlotContent = document.createElement('div');
+                timeSlotContent.className = 'time-slot-content';
+
+                timeSlotData.medications.forEach(med => {
+                    const medicationElement = document.createElement('div');
+                    medicationElement.className = 'medication';
+
+                    const medicationId = `${timeSlotData.timeSlot}-${med.name}-${dateString}`;
+                    const isTaken = takenMedications[medicationId] === true;
+
                     if (isTaken) {
-                        medElement.className += ' completed';
+                        medicationElement.classList.add('completed');
                     }
 
-                    medElement.innerHTML = `
-                        <input type="checkbox" id="${medId}" ${isTaken ? 'checked' : ''}>
-                        <div class="med-info">
-                            <div class="med-name">${med.name}</div>
-                            ${med.instructions ? `<div class="med-instructions">${med.instructions}</div>` : ''}
+                    medicationElement.innerHTML = `
+                        <input type="checkbox" class="medication-checkbox" id="${medicationId}" ${isTaken ? 'checked' : ''}>
+                        <div class="medication-info">
+                            <div class="medication-name">${med.name}</div>
+                            ${med.instructions ? `<div class="medication-instructions">${med.instructions}</div>` : ''}
                         </div>
                     `;
 
-                    timeSlot.appendChild(medElement);
+                    timeSlotContent.appendChild(medicationElement);
 
                     // Add event listeners
-                    const checkbox = medElement.querySelector(`#${medId}`);
-                    const medInfo = medElement.querySelector('.med-info');
+                    const checkbox = medicationElement.querySelector(`#${medicationId}`);
+                    const medInfo = medicationElement.querySelector('.medication-info');
 
-                    // Make med-info div clickable
+                    // Make medication row clickable
                     medInfo.addEventListener('click', function() {
                         checkbox.checked = !checkbox.checked;
-                        handleCheckboxChange(checkbox, medId, med.name, medElement);
+                        handleMedicationChange(checkbox, medicationId, med.name, medicationElement);
                     });
 
                     // Handle checkbox change
                     checkbox.addEventListener('change', function() {
-                        handleCheckboxChange(this, medId, med.name, medElement);
+                        handleMedicationChange(this, medicationId, med.name, medicationElement);
                     });
                 });
 
-                medicationList.appendChild(timeSlot);
+                timeSlotElement.appendChild(timeSlotContent);
+                medicationList.appendChild(timeSlotElement);
             });
         }
 
-        // Handle checkbox changes
-        function handleCheckboxChange(checkbox, medId, medName, element) {
+        // Handle medication checkbox changes
+        function handleMedicationChange(checkbox, medicationId, medicationName, element) {
             try {
-                // Get current data
-                let takenMeds = {};
-                const stored = localStorage.getItem('taken_' + today);
+                // Get the date string from the medicationId
+                const parts = medicationId.split('-');
+                const dateString = parts[parts.length - 1];
+
+                // Get stored data for this date
+                let takenMedications = {};
+                const stored = localStorage.getItem('taken_' + dateString);
                 if (stored) {
-                    takenMeds = JSON.parse(stored);
+                    takenMedications = JSON.parse(stored);
                 }
 
                 // Update data
-                takenMeds[medId] = checkbox.checked;
-                localStorage.setItem('taken_' + today, JSON.stringify(takenMeds));
-
-                // Add animation
-                element.classList.add('pulse');
-                setTimeout(function() {
-                    element.classList.remove('pulse');
-                }, 300);
+                takenMedications[medicationId] = checkbox.checked;
+                localStorage.setItem('taken_' + dateString, JSON.stringify(takenMedications));
 
                 // Update UI
                 if (checkbox.checked) {
                     element.classList.add('completed');
-                    showToast(medName + " marked as taken!");
+                    element.classList.add('pulse');
+                    showToast(medicationName + " marked as taken!");
                 } else {
                     element.classList.remove('completed');
-                    showToast(medName + " marked as not taken!");
+                    element.classList.add('pulse');
+                    showToast(medicationName + " marked as not taken!");
+                }
+
+                // Remove animation class after animation completes
+                setTimeout(() => {
+                    element.classList.remove('pulse');
+                }, 300);
+
+                // Update stats if on stats page
+                if (!statsPage.classList.contains('hidden')) {
+                    updateStats();
                 }
             } catch (e) {
-                console.error('Error saving to storage:', e);
+                console.error('Error saving medication state:', e);
                 showToast('Error saving: ' + e.message);
             }
         }
 
-        // Show toast message
+        // Show toast notification
         function showToast(message) {
             toast.textContent = message;
-            toast.style.display = 'block';
+            toast.classList.add('show');
 
-            setTimeout(function() {
-                toast.style.display = 'none';
-            }, 2000);
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
         }
 
-        // Initialize the app
-        function init() {
-            console.log("Initializing app");
-            renderMedications();
-        }
+        // Update stats
+        function updateStats() {
+            // Get today's date
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0];
 
-        // Call init when the page loads
-        document.addEventListener('DOMContentLoaded', init);
-        // Also call it immediately in case DOMContentLoaded already fired
-        init();
-    </script>
-</body>
-</html>
+            // Count total medications and taken medications for today
+            let totalMeds = 0;
+            let takenMeds = 0;
+
+            // Get today's taken medications
+            const todayTakenMeds = JSON.parse(localStorage.getItem(`taken_${todayString}`)) || {};
+
+            // Count total medications for today
+            medicationData.forEach(timeSlot => {
+                timeSlot.medications.forEach(med => {
+                    totalMeds++;
+                    const medId = `${timeSlot.timeSlot}-${med.name}-${todayString}`;
+                    if (todayTakenMeds[medId]) {
+                        takenMeds++;
+                    }
+                });
+            });
+
+            // Update today's stats
+            const todayPercent = totalMeds > 0 ? Math.round((takenMeds / totalMeds) * 100) : 0;
+            todayPercentage.textContent = `${todayPercent}% (${takenMeds}/${totalMeds})`;
+            todayProgress.style.width = `${todayPercent}%`;
+
+            // Count weekly stats
+            let weeklyTotal = 0;
+            let weeklyTaken = 0;
+
+            // Get data for the past 7 days
+            for (let i = 0; i < 7; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateString = date.toISOString().split('T')[0];
+
+                // Count total medications for this day
+                const dayTotal = medicationData.reduce((sum, timeSlot) => sum + timeSlot.medications.length, 0);
+                weeklyTotal += dayTotal;
+
+                // Count taken medications for this day
+                const dateTakenMeds = JSON.parse(localStorage.getItem(`taken_${dateString}`)) || {};
+                weeklyTaken += Object.values(dateTakenMeds).filter(Boolean).length;
+            }
+
+            // Update weekly stats
+            const weeklyPercent = weeklyTotal > 0 ? Math.round((weeklyTaken / weeklyTotal) * 100) : 0;
+            weeklyPercentage.textContent = `${weeklyPercent}% (${weeklyTaken}/${weeklyTotal})`;
+            weeklyProgress.style.width = `${weeklyPercent}%`;
+
+            // Calculate most missed medications
+            const missedMedsCount = {};
+
+            // Get data for the past 30 days
+            for (let i = 0; i < 30; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateString = date.toISOString().split('T')[0];
+                const dateTakenMeds = JSON.parse(localStorage.getItem(`taken_${dateString}`)) || {};
+
+                // Check each medication for this day
+                medicationData.forEach(timeSlot => {
+                    timeSlot.medications.forEach(med => {
+                        const medId = `${timeSlot.timeSlot}-${med.name}-${dateString}`;
+                        const medKey = `${timeSlot.timeSlot}-${med.name}`;
+
+                        // Initialize counter if needed
+                        if (!missedMedsCount[medKey]) {
+                            missedMedsCount[medKey] = { total: 0, missed: 0, name: med.name, time: timeSlot.timeSlot };
+                        }
+
+                        missedMedsCount[medKey].total++;
+
+                        if (!dateTakenMeds[medId]) {
+                            missedMedsCount[medKey].missed++;
+                        }
+                    });
+                });
+            }
+
+            // Sort by missed percentage
+            const sortedMissed = Object.values(missedMedsCount)
+                .filter(med => med.total > 0)
+                .map(med => ({
+                    ...med,
+                    missedPercent: Math.round((med.missed / med.total) * 100)
+                }))
+                .sort((a, b) => b.missedPercent - a.missedPercent)
+                .slice(0, 5); // Get top 5
+
+            // Update missed medications list
+            missedMedications.innerHTML = '';
+
+            if (sortedMissed.length > 0) {
+                sortedMissed.forEach(med => {
+                    const li = document.createElement('li');
+                    li.textContent = `${med.name} (${med.time}): Missed ${med.missedPercent}% of the time`;
+                    missedMedications.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No missed medications data yet';
+                missedMedications.appendChild(li);
+            }

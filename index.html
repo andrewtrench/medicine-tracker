@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Medication Tracker</title>
+    <title>Medication Tracker</title>
+    <!-- SheetJS library for Excel file parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -107,10 +109,71 @@
             align-items: center;
             cursor: pointer;
         }
+        .settings-section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .file-input {
+            margin: 10px 0;
+        }
+        .btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .btn-success {
+            background: #34a853;
+        }
+        .btn-warning {
+            background: #fbbc05;
+        }
+        .btn-danger {
+            background: #ea4335;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <h1>Medication Tracker</h1>
+
+    <div class="settings-section">
+        <h3>Medication Schedule</h3>
+        <p>Upload an Excel file with your medication schedule:</p>
+        <input type="file" id="excel-file" class="file-input" accept=".xlsx, .xls">
+        <button id="load-default" class="btn">Load Default Schedule</button>
+        <button id="download-template" class="btn btn-success">Download Template</button>
+    </div>
 
     <div class="date-nav">
         <button id="prev-day">&lt; Previous</button>
@@ -124,86 +187,138 @@
 
     <div id="toast" class="toast">Message</div>
     <div class="debug-btn" id="debug-btn">?</div>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
 
     <script>
-        // Create hardcoded medications with direct HTML for maximum compatibility
-        function createHardcodedMedicationList() {
-            const timeSlots = [
-                {
-                    name: "6:30 AM (Before Breakfast)",
-                    meds: [
-                        {name: "Clopamon", instructions: ""},
-                        {name: "Ondansetron", instructions: ""}
-                    ]
-                },
-                {
-                    name: "7:00 AM (After Breakfast)",
-                    meds: [
-                        {name: "Targinact x2", instructions: ""},
-                        {name: "Xeloda", instructions: ""},
-                        {name: "Losaar", instructions: "Only if BP is up"},
-                        {name: "Amlodipine", instructions: "Only if BP is up"}
-                    ]
-                },
-                {
-                    name: "10:00 AM (Mid-Morning)",
-                    meds: [
-                        {name: "Oxynorm", instructions: "2 tablets"},
-                        {name: "Paracetamol", instructions: ""}
-                    ]
-                },
-                {
-                    name: "12:30 PM (Before Lunch)",
-                    meds: [
-                        {name: "Clopamon", instructions: "Anti nausea"},
-                        {name: "Ondansetron", instructions: "Anti nausea"}
-                    ]
-                },
-                {
-                    name: "12:30 PM",
-                    meds: [
-                        {name: "Lenamet", instructions: "Stops stomach acid"}
-                    ]
-                },
-                {
-                    name: "3:00 PM (Afternoon)",
-                    meds: [
-                        {name: "Oxynorm", instructions: ""},
-                        {name: "Paracetamol", instructions: ""}
-                    ]
-                },
-                {
-                    name: "6:30 PM (Before Dinner)",
-                    meds: [
-                        {name: "Clopamon", instructions: ""},
-                        {name: "Ondansetron", instructions: ""}
-                    ]
-                },
-                {
-                    name: "7:00 PM (Dinner)",
-                    meds: [
-                        {name: "Targinact", instructions: ""},
-                        {name: "Xeloda", instructions: ""},
-                        {name: "Adco-Simvastatin", instructions: ""}
-                    ]
-                },
-                {
-                    name: "9:00 PM (Night)",
-                    meds: [
-                        {name: "Oxynorm", instructions: ""},
-                        {name: "Paracetamol", instructions: ""}
-                    ]
-                },
-                {
-                    name: "10:00 PM (Before Bed)",
-                    meds: [
-                        {name: "Movicol", instructions: ""},
-                        {name: "Lenamet", instructions: ""}
-                    ]
-                }
-            ];
+        // Default medication data
+        const defaultMedicationData = [
+            {
+                name: "6:30 AM (Before Breakfast)",
+                meds: [
+                    {name: "Clopamon", instructions: ""},
+                    {name: "Ondansetron", instructions: ""}
+                ]
+            },
+            {
+                name: "7:00 AM (After Breakfast)",
+                meds: [
+                    {name: "Targinact x2", instructions: ""},
+                    {name: "Xeloda", instructions: ""},
+                    {name: "Losaar", instructions: "Only if BP is up"},
+                    {name: "Amlodipine", instructions: "Only if BP is up"}
+                ]
+            },
+            {
+                name: "10:00 AM (Mid-Morning)",
+                meds: [
+                    {name: "Oxynorm", instructions: "2 tablets"},
+                    {name: "Paracetamol", instructions: ""}
+                ]
+            },
+            {
+                name: "12:30 PM (Before Lunch)",
+                meds: [
+                    {name: "Clopamon", instructions: "Anti nausea"},
+                    {name: "Ondansetron", instructions: "Anti nausea"}
+                ]
+            },
+            {
+                name: "12:30 PM",
+                meds: [
+                    {name: "Lenamet", instructions: "Stops stomach acid"}
+                ]
+            },
+            {
+                name: "3:00 PM (Afternoon)",
+                meds: [
+                    {name: "Oxynorm", instructions: ""},
+                    {name: "Paracetamol", instructions: ""}
+                ]
+            },
+            {
+                name: "6:30 PM (Before Dinner)",
+                meds: [
+                    {name: "Clopamon", instructions: ""},
+                    {name: "Ondansetron", instructions: ""}
+                ]
+            },
+            {
+                name: "7:00 PM (Dinner)",
+                meds: [
+                    {name: "Targinact", instructions: ""},
+                    {name: "Xeloda", instructions: ""},
+                    {name: "Adco-Simvastatin", instructions: ""}
+                ]
+            },
+            {
+                name: "9:00 PM (Night)",
+                meds: [
+                    {name: "Oxynorm", instructions: ""},
+                    {name: "Paracetamol", instructions: ""}
+                ]
+            },
+            {
+                name: "10:00 PM (Before Bed)",
+                meds: [
+                    {name: "Movicol", instructions: ""},
+                    {name: "Lenamet", instructions: ""}
+                ]
+            }
+        ];
 
-            const medList = document.getElementById('medication-list');
+        // Current medication data
+        let medicationData = [];
+
+        // Date navigation
+        let selectedDate = new Date();
+
+        // DOM elements
+        const medList = document.getElementById('medication-list');
+        const excelFile = document.getElementById('excel-file');
+        const loadDefaultBtn = document.getElementById('load-default');
+        const downloadTemplateBtn = document.getElementById('download-template');
+        const prevDayBtn = document.getElementById('prev-day');
+        const nextDayBtn = document.getElementById('next-day');
+        const currentDateEl = document.getElementById('current-date');
+        const debugBtn = document.getElementById('debug-btn');
+        const toast = document.getElementById('toast');
+        const loadingOverlay = document.getElementById('loading-overlay');
+
+        // Initialize
+        function init() {
+            // Try to load saved medication data
+            const savedData = localStorage.getItem('medication_data');
+            if (savedData) {
+                try {
+                    medicationData = JSON.parse(savedData);
+                    createMedicationList();
+                } catch (e) {
+                    console.error("Error loading saved medication data:", e);
+                    medicationData = [...defaultMedicationData];
+                    createMedicationList();
+                }
+            } else {
+                // Use default data
+                medicationData = [...defaultMedicationData];
+                createMedicationList();
+            }
+
+            // Set up event listeners
+            excelFile.addEventListener('change', handleExcelFile);
+            loadDefaultBtn.addEventListener('click', loadDefaultData);
+            downloadTemplateBtn.addEventListener('click', downloadTemplate);
+            prevDayBtn.addEventListener('click', navigateToPreviousDay);
+            nextDayBtn.addEventListener('click', navigateToNextDay);
+            debugBtn.addEventListener('click', showDebugInfo);
+
+            // Update date display
+            updateDateDisplay();
+        }
+
+        // Create medication list from data
+        function createMedicationList() {
             const dateStr = selectedDate.toISOString().split('T')[0];
 
             // Try to get saved medication statuses
@@ -221,7 +336,7 @@
             medList.innerHTML = '';
 
             // Create HTML for each time slot
-            timeSlots.forEach((slot, slotIndex) => {
+            medicationData.forEach((slot, slotIndex) => {
                 let slotHtml = `
                     <div class="time-slot">
                         <div class="time-header">${slot.name}</div>
@@ -310,53 +425,216 @@
             }
         }
 
-        // Show toast message
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.style.display = 'block';
+        // Handle Excel file upload
+        function handleExcelFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-            setTimeout(function() {
-                toast.style.display = 'none';
-            }, 2000);
+            showLoading(true);
+
+            // Read the Excel file
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+
+                    // Get the first sheet
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+
+                    // Convert to JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                    // Validate the data structure
+                    if (!validateExcelData(jsonData)) {
+                        showToast("Invalid Excel format. Please use the template.");
+                        showLoading(false);
+                        return;
+                    }
+
+                    // Process the data
+                    processExcelData(jsonData);
+
+                    showToast("Medication schedule loaded successfully!");
+                } catch (e) {
+                    console.error("Error processing Excel file:", e);
+                    showToast("Error processing file: " + e.message);
+                } finally {
+                    showLoading(false);
+                }
+            };
+
+            reader.onerror = function() {
+                showToast("Error reading file");
+                showLoading(false);
+            };
+
+            reader.readAsArrayBuffer(file);
         }
 
-        // Date navigation
-        let selectedDate = new Date();
+        // Validate Excel data
+        function validateExcelData(data) {
+            if (!data || !data.length) return false;
 
-        document.getElementById('prev-day').addEventListener('click', function() {
+            // Check for required columns
+            const firstRow = data[0];
+            if (!firstRow.TimeSlot || !firstRow.MedicationName) {
+                return false;
+            }
+
+            return true;
+        }
+
+        // Process Excel data
+        function processExcelData(data) {
+            // Group medications by time slot
+            const timeSlots = {};
+
+            data.forEach(row => {
+                const timeSlot = row.TimeSlot;
+                const medName = row.MedicationName;
+                const instructions = row.Instructions || '';
+
+                if (!timeSlots[timeSlot]) {
+                    timeSlots[timeSlot] = [];
+                }
+
+                timeSlots[timeSlot].push({
+                    name: medName,
+                    instructions: instructions
+                });
+            });
+
+            // Convert to our format
+            const newMedicationData = Object.keys(timeSlots).map(timeSlot => ({
+                name: timeSlot,
+                meds: timeSlots[timeSlot]
+            }));
+
+            // Sort by time (simple string comparison for now)
+            newMedicationData.sort((a, b) => {
+                return a.name.localeCompare(b.name);
+            });
+
+            // Update medication data
+            medicationData = newMedicationData;
+
+            // Save to localStorage
+            try {
+                localStorage.setItem('medication_data', JSON.stringify(medicationData));
+            } catch (e) {
+                console.error("Error saving medication data:", e);
+                showToast("Error saving data: " + e.message);
+            }
+
+            // Refresh UI
+            createMedicationList();
+        }
+
+        // Load default data
+        function loadDefaultData() {
+            medicationData = [...defaultMedicationData];
+
+            // Save to localStorage
+            try {
+                localStorage.setItem('medication_data', JSON.stringify(medicationData));
+            } catch (e) {
+                console.error("Error saving medication data:", e);
+            }
+
+            // Refresh UI
+            createMedicationList();
+            showToast("Default medication schedule loaded!");
+        }
+
+        // Download template Excel file
+        function downloadTemplate() {
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+
+            // Create headers
+            const headers = ['TimeSlot', 'MedicationName', 'Instructions'];
+
+            // Create data from current medication data
+            const data = [];
+            medicationData.forEach(slot => {
+                slot.meds.forEach(med => {
+                    data.push([slot.name, med.name, med.instructions || '']);
+                });
+            });
+
+            // Combine headers and data
+            const wsData = [headers, ...data];
+
+            // Create worksheet
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+            // Add to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Medications');
+
+            // Create instructions sheet
+            const instructionsWs = XLSX.utils.aoa_to_sheet([
+                ['Medication Schedule Template'],
+                [''],
+                ['Instructions:'],
+                ['1. Do not modify the header row (TimeSlot, MedicationName, Instructions)'],
+                ['2. Each row represents one medication at a specific time'],
+                ['3. Times should be entered in the format "9:00 AM" or "2:30 PM"'],
+                ['4. You can add optional text in parentheses after the time, e.g., "7:00 AM (After Breakfast)"'],
+                ['5. The Instructions column is optional']
+            ]);
+
+            // Add instructions sheet
+            XLSX.utils.book_append_sheet(wb, instructionsWs, 'Instructions');
+
+            // Write to file and download
+            XLSX.writeFile(wb, 'Medication_Schedule_Template.xlsx');
+        }
+
+        // Navigate to previous day
+        function navigateToPreviousDay() {
             selectedDate.setDate(selectedDate.getDate() - 1);
             updateDateDisplay();
-            createHardcodedMedicationList();
-        });
+            createMedicationList();
+        }
 
-        document.getElementById('next-day').addEventListener('click', function() {
+        // Navigate to next day
+        function navigateToNextDay() {
             selectedDate.setDate(selectedDate.getDate() + 1);
             updateDateDisplay();
-            createHardcodedMedicationList();
-        });
+            createMedicationList();
+        }
 
+        // Update date display
         function updateDateDisplay() {
-            const dateDisplay = document.getElementById('current-date');
             const today = new Date();
 
             if (selectedDate.toDateString() === today.toDateString()) {
-                dateDisplay.textContent = 'Today';
+                currentDateEl.textContent = 'Today';
             } else if (selectedDate.toDateString() === new Date(today.setDate(today.getDate() - 1)).toDateString()) {
-                dateDisplay.textContent = 'Yesterday';
+                currentDateEl.textContent = 'Yesterday';
             } else if (selectedDate.toDateString() === new Date(new Date().setDate(new Date().getDate() + 1)).toDateString()) {
-                dateDisplay.textContent = 'Tomorrow';
+                currentDateEl.textContent = 'Tomorrow';
             } else {
                 const options = { weekday: 'long', month: 'short', day: 'numeric' };
-                dateDisplay.textContent = selectedDate.toLocaleDateString('en-US', options);
+                currentDateEl.textContent = selectedDate.toLocaleDateString('en-US', options);
             }
         }
 
-        // Debug button
-        document.getElementById('debug-btn').addEventListener('click', function() {
+        // Show debug info
+        function showDebugInfo() {
             const dateStr = selectedDate.toISOString().split('T')[0];
             let debugInfo = "Debug Info:\n";
             debugInfo += "- Date: " + dateStr + "\n";
+            debugInfo += "- Time slots: " + medicationData.length + "\n";
+
+            // Count total medications
+            let totalMeds = 0;
+            medicationData.forEach(slot => {
+                totalMeds += slot.meds.length;
+            });
+            debugInfo += "- Total medications: " + totalMeds + "\n";
 
             try {
                 localStorage.setItem('test', 'test');
@@ -371,16 +649,38 @@
                 } else {
                     debugInfo += "- No medications tracked for this date\n";
                 }
+
+                // Check if using custom schedule
+                const isCustom = localStorage.getItem('medication_data') ? "Yes" : "No";
+                debugInfo += "- Using custom schedule: " + isCustom + "\n";
             } catch (e) {
                 debugInfo += "- localStorage error: " + e.message + "\n";
             }
 
             alert(debugInfo);
-        });
+        }
 
-        // Initialize
-        updateDateDisplay();
-        createHardcodedMedicationList();
+        // Show toast message
+        function showToast(message) {
+            toast.textContent = message;
+            toast.style.display = 'block';
+
+            setTimeout(function() {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // Show/hide loading overlay
+        function showLoading(show) {
+            if (show) {
+                loadingOverlay.style.display = 'flex';
+            } else {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // Initialize app
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>

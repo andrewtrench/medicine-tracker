@@ -15,9 +15,9 @@
             background-color: #f5f5f5;
         }
         h1 {
-            text-align: center;
-            color: #4285f4;
-            margin-bottom: 20px;
+            margin: 0;
+            padding: 15px 0;
+            color: white;
         }
         .time-slot {
             margin-bottom: 20px;
@@ -109,13 +109,6 @@
             align-items: center;
             cursor: pointer;
         }
-        .settings-section {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
         .file-input {
             margin: 10px 0;
         }
@@ -164,129 +157,137 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* New Navigation Bar Styles */
+        /* Navbar Styles */
         .navbar {
             background-color: #4285f4;
             color: white;
+            text-align: center;
             padding: 10px 0;
-            margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .navbar-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 15px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        .navbar-brand {
-            font-size: 24px;
-            font-weight: bold;
-            color: white;
-            text-decoration: none;
-        }
-        .navbar-menu {
+
+        .dropdown {
             position: relative;
             display: inline-block;
+            float: right;
+            margin-right: 15px;
         }
-        .menu-icon {
-            font-size: 24px;
-            cursor: pointer;
-            background: none;
-            border: none;
+
+        .menu-button {
+            background-color: transparent;
             color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 0 10px;
         }
+
         .dropdown-content {
             display: none;
             position: absolute;
             right: 0;
             background-color: white;
             min-width: 200px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
             z-index: 1;
             border-radius: 4px;
+            overflow: hidden;
         }
-        .dropdown-content button {
+
+        .dropdown-content a {
             color: black;
             padding: 12px 16px;
             text-decoration: none;
             display: block;
-            width: 100%;
-            text-align: left;
-            border: none;
-            background: none;
             cursor: pointer;
         }
-        .dropdown-content button:hover {
+
+        .dropdown-content a:hover {
             background-color: #f1f1f1;
         }
-        .dropdown-content hr {
-            margin: 5px 0;
-            border: none;
-            border-top: 1px solid #ddd;
+
+        .dropdown-content .danger {
+            color: #ea4335;
         }
-        .dropdown-content.show {
+
+        .dropdown-content hr {
+            margin: 0;
+            border: none;
+            border-top: 1px solid #eee;
+        }
+
+        .show {
             display: block;
         }
-        .main-content {
-            padding: 0 15px 20px 15px;
+
+        .container {
+            padding: 20px;
         }
+
+        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
-            z-index: 200;
+            z-index: 99;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
+            overflow: auto;
             background-color: rgba(0,0,0,0.4);
         }
+
         .modal-content {
-            background-color: white;
+            background-color: #fefefe;
             margin: 15% auto;
             padding: 20px;
             border-radius: 8px;
+            width: 80%;
             max-width: 500px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .close-btn {
+
+        .close {
             color: #aaa;
             float: right;
             font-size: 28px;
             font-weight: bold;
-            cursor: pointer;
         }
-        .close-btn:hover {
+
+        .close:hover,
+        .close:focus {
             color: black;
+            text-decoration: none;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <!-- Navigation Bar -->
     <div class="navbar">
-        <div class="navbar-container">
-            <a href="#" class="navbar-brand">PillPal</a>
-            <div class="navbar-menu">
-                <button class="menu-icon" id="menu-button">☰</button>
-                <div class="dropdown-content" id="dropdown-menu">
-                    <button id="upload-excel">Upload Schedule</button>
-                    <button id="load-default">Load Default Schedule</button>
-                    <button id="download-template">Download Template</button>
-                    <hr>
-                    <button id="clear-all-data" style="color: #ea4335;">Clear All App Data</button>
-                </div>
+        <div class="dropdown">
+            <button id="menuButton" class="menu-button">☰</button>
+            <div id="menuDropdown" class="dropdown-content">
+                <a id="uploadButton">Upload Schedule</a>
+                <a id="loadDefaultButton">Load Default Schedule</a>
+                <a id="downloadTemplateButton">Download Template</a>
+                <hr>
+                <a id="clearDataButton" class="danger">Clear All App Data</a>
             </div>
+        </div>
+        <h1>PillPal</h1>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <h3>Upload Medication Schedule</h3>
+            <p>Select an Excel file with your medication schedule:</p>
+            <input type="file" id="excel-file" class="file-input" accept=".xlsx, .xls">
         </div>
     </div>
 
-    <div class="main-content">
+    <div class="container">
         <div class="date-nav">
             <button id="prev-day">&lt; Previous</button>
             <span id="current-date">Today</span>
@@ -295,18 +296,6 @@
 
         <div id="medication-list">
             <!-- Medications will be populated here -->
-        </div>
-    </div>
-
-    <!-- Upload Schedule Modal -->
-    <div id="upload-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Upload Medication Schedule</h3>
-                <span class="close-btn" id="close-upload-modal">&times;</span>
-            </div>
-            <p>Select an Excel file with your medication schedule:</p>
-            <input type="file" id="excel-file" class="file-input" accept=".xlsx, .xls">
         </div>
     </div>
 
@@ -409,17 +398,15 @@
         const toast = document.getElementById('toast');
         const loadingOverlay = document.getElementById('loading-overlay');
 
-        // Navigation menu elements
-        const menuButton = document.getElementById('menu-button');
-        const dropdownMenu = document.getElementById('dropdown-menu');
-        const uploadExcelBtn = document.getElementById('upload-excel');
-        const loadDefaultBtn = document.getElementById('load-default');
-        const downloadTemplateBtn = document.getElementById('download-template');
-        const clearAllDataBtn = document.getElementById('clear-all-data');
-
-        // Modal elements
-        const uploadModal = document.getElementById('upload-modal');
-        const closeUploadModal = document.getElementById('close-upload-modal');
+        // Menu and modal elements
+        const menuButton = document.getElementById('menuButton');
+        const menuDropdown = document.getElementById('menuDropdown');
+        const uploadButton = document.getElementById('uploadButton');
+        const loadDefaultButton = document.getElementById('loadDefaultButton');
+        const downloadTemplateButton = document.getElementById('downloadTemplateButton');
+        const clearDataButton = document.getElementById('clearDataButton');
+        const uploadModal = document.getElementById('uploadModal');
+        const closeModal = document.getElementById('closeModal');
 
         // Initialize
         function init() {
@@ -440,57 +427,63 @@
                 createMedicationList();
             }
 
-            // Set up event listeners
-            excelFile.addEventListener('change', handleExcelFile);
+            // Set up event listeners for navigation and data
             prevDayBtn.addEventListener('click', navigateToPreviousDay);
             nextDayBtn.addEventListener('click', navigateToNextDay);
             debugBtn.addEventListener('click', showDebugInfo);
+            excelFile.addEventListener('change', handleExcelFile);
 
-            // Menu event listeners
-            menuButton.addEventListener('click', toggleMenu);
-            uploadExcelBtn.addEventListener('click', showUploadModal);
-            loadDefaultBtn.addEventListener('click', loadDefaultData);
-            downloadTemplateBtn.addEventListener('click', downloadTemplate);
-            clearAllDataBtn.addEventListener('click', function() {
+            // Menu related event listeners
+            menuButton.addEventListener('click', function() {
+                menuDropdown.classList.toggle('show');
+            });
+
+            // Close the dropdown if clicked outside
+            window.addEventListener('click', function(event) {
+                if (!event.target.matches('.menu-button')) {
+                    if (menuDropdown.classList.contains('show')) {
+                        menuDropdown.classList.remove('show');
+                    }
+                }
+            });
+
+            // Menu item actions
+            uploadButton.addEventListener('click', function() {
+                uploadModal.style.display = 'block';
+                menuDropdown.classList.remove('show');
+            });
+
+            loadDefaultButton.addEventListener('click', function() {
+                loadDefaultData();
+                menuDropdown.classList.remove('show');
+            });
+
+            downloadTemplateButton.addEventListener('click', function() {
+                downloadTemplate();
+                menuDropdown.classList.remove('show');
+            });
+
+            clearDataButton.addEventListener('click', function() {
                 if (confirm("WARNING: This will delete all your medication data and history.\n\nAre you sure you want to continue?")) {
                     clearAllAppData();
                 }
-                closeMenu();
+                menuDropdown.classList.remove('show');
             });
 
-            // Modal event listeners
-            closeUploadModal.addEventListener('click', closeModal);
+            // Modal close button
+            closeModal.addEventListener('click', function() {
+                uploadModal.style.display = 'none';
+            });
 
-            // Close menu when clicking outside
+            // Close modal when clicking outside
             window.addEventListener('click', function(event) {
-                if (!event.target.matches('.menu-icon') && dropdownMenu.classList.contains('show')) {
-                    closeMenu();
+                if (event.target == uploadModal) {
+                    uploadModal.style.display = 'none';
                 }
             });
 
             // Update date display
             updateDateDisplay();
-        }
-
-        // Toggle dropdown menu
-        function toggleMenu() {
-            dropdownMenu.classList.toggle('show');
-        }
-
-        // Close dropdown menu
-        function closeMenu() {
-            dropdownMenu.classList.remove('show');
-        }
-
-        // Show upload modal
-        function showUploadModal() {
-            uploadModal.style.display = 'block';
-            closeMenu();
-        }
-
-        // Close modals
-        function closeModal() {
-            uploadModal.style.display = 'none';
         }
 
         // Create medication list from data
@@ -607,7 +600,7 @@
             if (!file) return;
 
             showLoading(true);
-            closeModal();
+            uploadModal.style.display = 'none';
 
             // Read the Excel file
             const reader = new FileReader();
@@ -760,7 +753,6 @@
             // Refresh UI
             createMedicationList();
             showToast("Default medication schedule loaded!");
-            closeMenu();
         }
 
         // Download template Excel file
@@ -805,7 +797,6 @@
 
             // Write to file and download
             XLSX.writeFile(wb, 'PillPal_Schedule_Template.xlsx');
-            closeMenu();
         }
 
         // Navigate to previous day
@@ -905,3 +896,24 @@
         // Show toast message
         function showToast(message) {
             toast.textContent = message;
+            toast.style.display = 'block';
+
+            setTimeout(function() {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // Show/hide loading overlay
+        function showLoading(show) {
+            if (show) {
+                loadingOverlay.style.display = 'flex';
+            } else {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // Initialize app
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

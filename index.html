@@ -595,54 +595,139 @@
         }
 
         // Handle Excel file upload
-        function handleExcelFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        // Handle Excel file upload - enhanced with better error handling and UI feedback
+function handleExcelFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-            showLoading(true);
-            uploadModal.style.display = 'none';
+    showLoading(true);
+    uploadModal.style.display = 'none';
 
-            // Read the Excel file
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
+    // Read the Excel file
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            console.log("File read successfully, processing...");
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
 
-                    // Get the first sheet
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
+            // Log available sheets for debugging
+            console.log("Available sheets:", workbook.SheetNames);
 
-                    // Convert to JSON
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            // Get the first sheet
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
 
-                    // Validate the data structure
-                    if (!validateExcelData(jsonData)) {
-                        showToast("Invalid Excel format. Please use the template.");
-                        showLoading(false);
-                        return;
-                    }
+            // Convert to JSON
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            console.log("Parsed JSON data:", jsonData);
 
-                    // Process the data
-                    processExcelData(jsonData);
-
-                    showToast("Medication schedule loaded successfully!");
-                } catch (e) {
-                    console.error("Error processing Excel file:", e);
-                    showToast("Error processing file: " + e.message);
-                } finally {
-                    showLoading(false);
-                }
-            };
-
-            reader.onerror = function() {
-                showToast("Error reading file");
+            // Validate the data structure with improved error feedback
+            if (!validateExcelData(jsonData)) {
+                showToast("Invalid Excel format. File must have TimeSlot and MedicationName columns. Please use the template.");
                 showLoading(false);
-            };
+                return;
+            }
 
-            reader.readAsArrayBuffer(file);
+            // Process the data
+            const success = processExcelData(jsonData);
+
+            if (success) {
+                showToast("Medication schedule loaded successfully!");
+                // Force UI refresh
+                createMedicationList();
+            } else {
+                showToast("Error: Could not process medication data");
+            }
+        } catch (e) {
+            console.error("Error processing Excel file:", e);
+            showToast("Error processing file: " + e.message);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    reader.onerror = function() {
+        showToast("Error reading file");
+        showLoading(false);
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+// Validate Excel data with more thorough checks
+function validateExcelData(data) {
+    if (!data || !data.length) {
+        console.error("Excel data is empty");
+        return false;
+    }
+
+    // Check for required columns
+    const firstRow = data[0];
+    if (!firstRow.TimeSlot || !firstRow.MedicationName) {
+        console.error("Missing required columns. Found:", Object.keys(firstRow));
+        return false;
+    }
+
+    return true;
+}
+
+// Process Excel data with better error handling and return success/failure
+function processExcelData(data) {
+    try {
+        // Group medications by time slot
+        const timeSlots = {};
+
+        data.forEach(row => {
+            const timeSlot = row.TimeSlot;
+            const medName = row.MedicationName;
+            const instructions = row.Instructions || '';
+
+            if (!timeSlots[timeSlot]) {
+                timeSlots[timeSlot] = [];
+            }
+
+            timeSlots[timeSlot].push({
+                name: medName,
+                instructions: instructions
+            });
+        });
+
+        // Log time slots for debugging
+        console.log("Processed time slots:", Object.keys(timeSlots));
+
+        // Convert to our format
+        const newMedicationData = Object.keys(timeSlots).map(timeSlot => ({
+            name: timeSlot,
+            meds: timeSlots[timeSlot]
+        }));
+
+        // Sort by time (using proper time comparison)
+        newMedicationData.sort((a, b) => {
+            return compareTimeSlots(a.name, b.name);
+        });
+
+        console.log("Sorted medication data:", newMedicationData);
+
+        // Update medication data
+        medicationData = newMedicationData;
+
+        // Save to localStorage
+        try {
+            localStorage.setItem('pillpal_medication_data', JSON.stringify(medicationData));
+            console.log("Data saved to localStorage successfully");
+        } catch (e) {
+            console.error("Error saving medication data:", e);
+            showToast("Error saving data: " + e.message);
+            return false;
         }
 
+        return true;
+    } catch (error) {
+        console.error("Error in processExcelData:", error);
+        return false;
+    }
+}
         // Validate Excel data
         function validateExcelData(data) {
             if (!data || !data.length) return false;

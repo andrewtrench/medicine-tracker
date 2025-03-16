@@ -3,311 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medication Tracker</title>
+    <title>Simple Medication Tracker</title>
     <style>
-        :root {
-            --primary-color: #4285f4;
-            --secondary-color: #34a853;
-            --background-color: #f5f5f5;
-            --card-color: #ffffff;
-            --text-color: #202124;
-            --border-color: #dadce0;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        }
-
         body {
-            background-color: var(--background-color);
-            color: var(--text-color);
-            padding-bottom: 80px;
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
         }
-
-        header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 1rem;
+        h1 {
             text-align: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            color: #4285f4;
+            margin-bottom: 20px;
         }
-
-        .date-selector {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 1rem;
-            background-color: var(--card-color);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .date-selector button {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--primary-color);
-            padding: 5px 10px;
-        }
-
         .time-slot {
-            margin: 1rem;
-            background-color: var(--card-color);
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-
-        .time-slot-header {
-            padding: 0.75rem;
-            background-color: var(--primary-color);
+        .time-header {
+            background-color: #4285f4;
             color: white;
+            padding: 12px 15px;
             font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            font-size: 16px;
         }
-
-        .time-slot-header.upcoming {
-            background-color: #fbbc05;
-        }
-
-        .time-slot-content {
-            padding: 0.5rem 0;
-        }
-
         .medication {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
             display: flex;
             align-items: center;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--border-color);
         }
-
         .medication:last-child {
             border-bottom: none;
         }
-
-        .medication-checkbox {
-            margin-right: 1rem;
+        input[type="checkbox"] {
+            margin-right: 15px;
             width: 24px;
             height: 24px;
-            accent-color: var(--secondary-color);
             cursor: pointer;
         }
-
-        .medication-info {
-            flex-grow: 1;
-            cursor: pointer;
-        }
-
-        .medication-name {
-            font-weight: 500;
-        }
-
-        .medication-instructions {
-            font-size: 0.8rem;
-            color: #5f6368;
-            margin-top: 0.25rem;
-        }
-
-        .medication.completed .medication-name {
+        .medication.completed .med-name {
             text-decoration: line-through;
-            color: #5f6368;
+            color: #999;
         }
-
-        nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: var(--card-color);
-            display: flex;
-            justify-content: space-around;
-            padding: 0.75rem 0;
-            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-            z-index: 100;
-        }
-
-        nav button {
-            background: none;
-            border: none;
-            font-size: 0.8rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: var(--text-color);
-            cursor: pointer;
-        }
-
-        nav button.active {
-            color: var(--primary-color);
-        }
-
-        nav button span {
-            font-size: 1.5rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        /* Stats page styles */
-        .stats-container {
-            padding: 1rem;
-        }
-
-        .stats-card {
-            background-color: var(--card-color);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .stats-card h3 {
-            margin-bottom: 0.5rem;
-            color: var(--primary-color);
-        }
-
-        .progress-bar {
-            height: 20px;
-            background-color: var(--border-color);
-            border-radius: 10px;
-            margin-top: 0.5rem;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background-color: var(--secondary-color);
-            border-radius: 10px;
-            transition: width 0.3s ease;
-        }
-
-        /* Settings page styles */
-        .settings-container {
-            padding: 1rem;
-        }
-
-        .setting-item {
-            background-color: var(--card-color);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .setting-item h3 {
-            margin-bottom: 0.5rem;
-        }
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-            margin-top: 0.5rem;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider {
-            background-color: var(--secondary-color);
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-
-        .notification-timing {
-            display: flex;
-            align-items: center;
-            margin-top: 0.5rem;
-        }
-
-        .notification-timing input {
-            width: 50px;
-            margin-right: 0.5rem;
-            padding: 0.25rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            text-align: center;
-        }
-
-        /* Toast notification */
         .toast {
             position: fixed;
-            bottom: 80px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             background-color: #333;
             color: white;
             padding: 10px 20px;
             border-radius: 4px;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            text-align: center;
-            max-width: 80%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 100;
         }
-
-        .toast.show {
-            opacity: 1;
+        .med-info {
+            flex-grow: 1;
+            cursor: pointer;
         }
-
-        /* Animation for new day */
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+        .med-name {
+            font-weight: bold;
         }
-
-        .pulse {
-            animation: pulse 0.3s ease-in-out;
+        .med-instructions {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 4px;
         }
-
-        /* Debug button */
+        .date-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .date-nav button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
         .debug-btn {
             position: fixed;
-            bottom: 80px;
-            right: 10px;
-            background-color: rgba(0,0,0,0.5);
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.5);
             color: white;
             width: 30px;
             height: 30px;
@@ -315,668 +105,282 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-weight: bold;
-            z-index: 100;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-
-        /* Make list items nicer in stats */
-        ul {
-            padding-left: 20px;
-        }
-
-        li {
-            margin-bottom: 8px;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Medication Tracker</h1>
-    </header>
+    <h1>Medication Tracker</h1>
 
-    <div id="today-page">
-        <div class="date-selector">
-            <button id="prev-day">◀</button>
-            <h2 id="current-date">Today</h2>
-            <button id="next-day">▶</button>
-        </div>
-        <div id="medication-list">
-            <!-- Time slots and medications will be populated here -->
-        </div>
+    <div class="date-nav">
+        <button id="prev-day">&lt; Previous</button>
+        <span id="current-date">Today</span>
+        <button id="next-day">Next &gt;</button>
     </div>
 
-    <div id="stats-page" class="hidden">
-        <div class="stats-container">
-            <div class="stats-card">
-                <h3>Today's Progress</h3>
-                <p id="today-percentage">0%</p>
-                <div class="progress-bar">
-                    <div id="today-progress" class="progress-fill" style="width: 0%"></div>
-                </div>
-            </div>
-            <div class="stats-card">
-                <h3>Weekly Adherence</h3>
-                <p id="weekly-percentage">0%</p>
-                <div class="progress-bar">
-                    <div id="weekly-progress" class="progress-fill" style="width: 0%"></div>
-                </div>
-            </div>
-            <div class="stats-card">
-                <h3>Most Missed Medications</h3>
-                <ul id="missed-medications">
-                    <!-- Will be populated with JavaScript -->
-                </ul>
-            </div>
-        </div>
+    <div id="medication-list">
+        <!-- Medications will be populated here -->
     </div>
 
-    <div id="settings-page" class="hidden">
-        <div class="settings-container">
-            <div class="setting-item">
-                <h3>Notifications</h3>
-                <p>Receive reminders for medication times</p>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="notifications-toggle" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="setting-item">
-                <h3>Reminder Time</h3>
-                <p>Get notified before medication time</p>
-                <div class="notification-timing">
-                    <input type="number" id="reminder-minutes" min="0" max="60" value="15">
-                    <span>minutes before</span>
-                </div>
-            </div>
-            <div class="setting-item">
-                <h3>Reset Data</h3>
-                <p>Clear all medication history</p>
-                <button id="reset-data" style="background-color: #ea4335; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; margin-top: 0.5rem; cursor: pointer;">Reset Data</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="toast" class="toast">Medication marked as taken!</div>
-
+    <div id="toast" class="toast">Message</div>
     <div class="debug-btn" id="debug-btn">?</div>
 
-    <nav>
-        <button id="today-btn" class="active">
-            <span>📅</span>
-            Today
-        </button>
-        <button id="stats-btn">
-            <span>📊</span>
-            Stats
-        </button>
-        <button id="settings-btn">
-            <span>⚙️</span>
-            Settings
-        </button>
-    </nav>
-
     <script>
-        // Console log for debugging
-        console.log("Script loaded - " + new Date().toISOString());
-
-        // DOM elements
-        const todayPage = document.getElementById('today-page');
-        const statsPage = document.getElementById('stats-page');
-        const settingsPage = document.getElementById('settings-page');
-        const todayBtn = document.getElementById('today-btn');
-        const statsBtn = document.getElementById('stats-btn');
-        const settingsBtn = document.getElementById('settings-btn');
-        const medicationList = document.getElementById('medication-list');
-        const currentDateElement = document.getElementById('current-date');
-        const prevDayButton = document.getElementById('prev-day');
-        const nextDayButton = document.getElementById('next-day');
-        const resetDataButton = document.getElementById('reset-data');
-        const notificationsToggle = document.getElementById('notifications-toggle');
-        const reminderMinutes = document.getElementById('reminder-minutes');
-        const toast = document.getElementById('toast');
-        const todayPercentage = document.getElementById('today-percentage');
-        const todayProgress = document.getElementById('today-progress');
-        const weeklyPercentage = document.getElementById('weekly-percentage');
-        const weeklyProgress = document.getElementById('weekly-progress');
-        const missedMedications = document.getElementById('missed-medications');
-        const debugBtn = document.getElementById('debug-btn');
-
-        // Current date and selected date
-        let currentDate = new Date();
-        let selectedDate = new Date();
-
-        // Medication data
-        const medicationData = [
-            // Morning medications
-            {
-                timeSlot: "6:30 AM (Before Breakfast)",
-                medications: [
-                    { name: "Clopamon", instructions: "" },
-                    { name: "Ondansetron", instructions: "" }
-                ]
-            },
-            {
-                timeSlot: "7:00 AM (After Breakfast)",
-                medications: [
-                    { name: "Targinact x2", instructions: "" },
-                    { name: "Xeloda", instructions: "" },
-                    { name: "Losaar", instructions: "Only if BP is up" },
-                    { name: "Amlodipine", instructions: "Only if BP is up" }
-                ]
-            },
-            {
-                timeSlot: "10:00 AM (Mid-Morning)",
-                medications: [
-                    { name: "Oxynorm", instructions: "2 tablets" },
-                    { name: "Paracetamol", instructions: "" }
-                ]
-            },
-            // Afternoon medications
-            {
-                timeSlot: "12:30 PM (Before Lunch)",
-                medications: [
-                    { name: "Clopamon", instructions: "Anti nausea" },
-                    { name: "Ondansetron", instructions: "Anti nausea" }
-                ]
-            },
-            {
-                timeSlot: "12:30 PM",
-                medications: [
-                    { name: "Lenamet", instructions: "Stops stomach acid" }
-                ]
-            },
-            {
-                timeSlot: "3:00 PM (Afternoon)",
-                medications: [
-                    { name: "Oxynorm", instructions: "" },
-                    { name: "Paracetamol", instructions: "" }
-                ]
-            },
-            // Evening medications
-            {
-                timeSlot: "6:30 PM (Before Dinner)",
-                medications: [
-                    { name: "Clopamon", instructions: "" },
-                    { name: "Ondansetron", instructions: "" }
-                ]
-            },
-            {
-                timeSlot: "7:00 PM (Dinner)",
-                medications: [
-                    { name: "Targinact", instructions: "" },
-                    { name: "Xeloda", instructions: "" },
-                    { name: "Adco-Simvastatin", instructions: "" }
-                ]
-            },
-            {
-                timeSlot: "9:00 PM (Night)",
-                medications: [
-                    { name: "Oxynorm", instructions: "" },
-                    { name: "Paracetamol", instructions: "" }
-                ]
-            },
-            {
-                timeSlot: "10:00 PM (Before Bed)",
-                medications: [
-                    { name: "Movicol", instructions: "" },
-                    { name: "Lenamet", instructions: "" }
-                ]
-            }
-        ];
-
-        // Helper function to create a safe ID from a string
-        function createSafeId(text, suffix = '') {
-            // Replace special characters that would make invalid selectors
-            return 'med-' + text.replace(/[^a-zA-Z0-9]/g, '_') + suffix;
-        }
-
-        // Initialize the app
-        function init() {
-            console.log("Initializing app");
-            showDate();
-            renderMedicationList();
-            updateStats();
-            setupEventListeners();
-
-            // Load settings from localStorage
-            if (localStorage.getItem('notificationsEnabled') === 'false') {
-                notificationsToggle.checked = false;
-            }
-
-            if (localStorage.getItem('reminderMinutes')) {
-                reminderMinutes.value = localStorage.getItem('reminderMinutes');
-            }
-
-            // Check for new day
-            checkForNewDay();
-        }
-
-        // Set up event listeners
-        function setupEventListeners() {
-            // Navigation between pages
-            todayBtn.addEventListener('click', () => {
-                todayPage.classList.remove('hidden');
-                statsPage.classList.add('hidden');
-                settingsPage.classList.add('hidden');
-                todayBtn.classList.add('active');
-                statsBtn.classList.remove('active');
-                settingsBtn.classList.remove('active');
-            });
-
-            statsBtn.addEventListener('click', () => {
-                todayPage.classList.add('hidden');
-                statsPage.classList.remove('hidden');
-                settingsPage.classList.add('hidden');
-                todayBtn.classList.remove('active');
-                statsBtn.classList.add('active');
-                settingsBtn.classList.remove('active');
-                updateStats();
-            });
-
-            settingsBtn.addEventListener('click', () => {
-                todayPage.classList.add('hidden');
-                statsPage.classList.add('hidden');
-                settingsPage.classList.remove('hidden');
-                todayBtn.classList.remove('active');
-                statsBtn.classList.remove('active');
-                settingsBtn.classList.add('active');
-            });
-
-            // Date navigation
-            prevDayButton.addEventListener('click', () => {
-                selectedDate.setDate(selectedDate.getDate() - 1);
-                showDate();
-                renderMedicationList();
-            });
-
-            nextDayButton.addEventListener('click', () => {
-                selectedDate.setDate(selectedDate.getDate() + 1);
-                showDate();
-                renderMedicationList();
-            });
-
-            // Settings page functionality
-            notificationsToggle.addEventListener('change', () => {
-                localStorage.setItem('notificationsEnabled', notificationsToggle.checked);
-            });
-
-            reminderMinutes.addEventListener('change', () => {
-                localStorage.setItem('reminderMinutes', reminderMinutes.value);
-            });
-
-            resetDataButton.addEventListener('click', () => {
-                if (confirm('Are you sure you want to reset all medication data? This cannot be undone.')) {
-                    // Clear all medication data but keep settings
-                    const notificationsEnabled = localStorage.getItem('notificationsEnabled');
-                    const reminderMinutesValue = localStorage.getItem('reminderMinutes');
-
-                    // Get all keys
-                    const keysToRemove = [];
-                    for (let i = 0; i < localStorage.length; i++) {
-                        const key = localStorage.key(i);
-                        if (key.startsWith('taken_')) {
-                            keysToRemove.push(key);
-                        }
-                    }
-
-                    // Remove them
-                    keysToRemove.forEach(key => localStorage.removeItem(key));
-
-                    // Restore settings
-                    localStorage.setItem('notificationsEnabled', notificationsEnabled);
-                    localStorage.setItem('reminderMinutes', reminderMinutesValue);
-
-                    // Refresh the view
-                    selectedDate = new Date();
-                    showDate();
-                    renderMedicationList();
-                    updateStats();
-
-                    showToast('All medication data has been reset');
+        // Create hardcoded medications with direct HTML for maximum compatibility
+        function createHardcodedMedicationList() {
+            const timeSlots = [
+                {
+                    name: "6:30 AM (Before Breakfast)",
+                    meds: [
+                        {name: "Clopamon", instructions: ""},
+                        {name: "Ondansetron", instructions: ""}
+                    ]
+                },
+                {
+                    name: "7:00 AM (After Breakfast)",
+                    meds: [
+                        {name: "Targinact x2", instructions: ""},
+                        {name: "Xeloda", instructions: ""},
+                        {name: "Losaar", instructions: "Only if BP is up"},
+                        {name: "Amlodipine", instructions: "Only if BP is up"}
+                    ]
+                },
+                {
+                    name: "10:00 AM (Mid-Morning)",
+                    meds: [
+                        {name: "Oxynorm", instructions: "2 tablets"},
+                        {name: "Paracetamol", instructions: ""}
+                    ]
+                },
+                {
+                    name: "12:30 PM (Before Lunch)",
+                    meds: [
+                        {name: "Clopamon", instructions: "Anti nausea"},
+                        {name: "Ondansetron", instructions: "Anti nausea"}
+                    ]
+                },
+                {
+                    name: "12:30 PM",
+                    meds: [
+                        {name: "Lenamet", instructions: "Stops stomach acid"}
+                    ]
+                },
+                {
+                    name: "3:00 PM (Afternoon)",
+                    meds: [
+                        {name: "Oxynorm", instructions: ""},
+                        {name: "Paracetamol", instructions: ""}
+                    ]
+                },
+                {
+                    name: "6:30 PM (Before Dinner)",
+                    meds: [
+                        {name: "Clopamon", instructions: ""},
+                        {name: "Ondansetron", instructions: ""}
+                    ]
+                },
+                {
+                    name: "7:00 PM (Dinner)",
+                    meds: [
+                        {name: "Targinact", instructions: ""},
+                        {name: "Xeloda", instructions: ""},
+                        {name: "Adco-Simvastatin", instructions: ""}
+                    ]
+                },
+                {
+                    name: "9:00 PM (Night)",
+                    meds: [
+                        {name: "Oxynorm", instructions: ""},
+                        {name: "Paracetamol", instructions: ""}
+                    ]
+                },
+                {
+                    name: "10:00 PM (Before Bed)",
+                    meds: [
+                        {name: "Movicol", instructions: ""},
+                        {name: "Lenamet", instructions: ""}
+                    ]
                 }
-            });
+            ];
 
-            // Debug button
-            debugBtn.addEventListener('click', function() {
-                let info = "Debug Info:\n";
-                info += "- Script is running\n";
-                info += "- Number of time slots: " + medicationData.length + "\n";
-                info += "- Today's date: " + new Date().toISOString().split('T')[0] + "\n";
-                info += "- Selected date: " + selectedDate.toISOString().split('T')[0] + "\n";
+            const medList = document.getElementById('medication-list');
+            const dateStr = selectedDate.toISOString().split('T')[0];
 
-                // Check localStorage
-                try {
-                    localStorage.setItem('test', 'test');
-                    localStorage.removeItem('test');
-                    info += "- localStorage working: Yes\n";
-
-                    // Count stored dates
-                    let storedDates = 0;
-                    for (let i = 0; i < localStorage.length; i++) {
-                        if (localStorage.key(i).startsWith('taken_')) {
-                            storedDates++;
-                        }
-                    }
-                    info += "- Dates with stored data: " + storedDates + "\n";
-
-                    const dateString = selectedDate.toISOString().split('T')[0];
-                    const stored = localStorage.getItem('taken_' + dateString);
-                    if (stored) {
-                        const takenMeds = JSON.parse(stored);
-                        info += "- Medications tracked on selected date: " + Object.keys(takenMeds).length + "\n";
-                    } else {
-                        info += "- Medications tracked on selected date: None\n";
-                    }
-                } catch (e) {
-                    info += "- localStorage error: " + e.message + "\n";
-                }
-
-                alert(info);
-            });
-        }
-
-        // Display the selected date
-        function showDate() {
-            const today = new Date();
-
-            // Format date as "Today", "Yesterday", "Tomorrow", or "Day, Month Date"
-            if (selectedDate.toDateString() === today.toDateString()) {
-                currentDateElement.textContent = 'Today';
-            } else if (selectedDate.toDateString() === new Date(today.setDate(today.getDate() - 1)).toDateString()) {
-                currentDateElement.textContent = 'Yesterday';
-            } else if (selectedDate.toDateString() === new Date(new Date().setDate(new Date().getDate() + 1)).toDateString()) {
-                currentDateElement.textContent = 'Tomorrow';
-            } else {
-                const options = { weekday: 'long', month: 'short', day: 'numeric' };
-                currentDateElement.textContent = selectedDate.toLocaleDateString('en-US', options);
-            }
-        }
-
-        // Render medication list for the selected date
-        function renderMedicationList() {
-            medicationList.innerHTML = '';
-
-            // Format date string for localStorage key
-            const dateString = selectedDate.toISOString().split('T')[0];
-
-            // Get taken medications for this date
-            let takenMedications = {};
+            // Try to get saved medication statuses
+            let savedMeds = {};
             try {
-                const stored = localStorage.getItem('taken_' + dateString);
-                if (stored) {
-                    takenMedications = JSON.parse(stored);
+                const saved = localStorage.getItem('meds_' + dateStr);
+                if (saved) {
+                    savedMeds = JSON.parse(saved);
                 }
             } catch (e) {
-                console.error('Error loading from storage:', e);
+                console.error("Error loading saved medications:", e);
             }
 
-            medicationData.forEach(timeSlotData => {
-                const timeSlotElement = document.createElement('div');
-                timeSlotElement.className = 'time-slot';
+            // Clear existing content
+            medList.innerHTML = '';
 
-                // Extract time for sorting and displaying
-                const timeMatch = timeSlotData.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
-                let timeForDisplay = timeSlotData.timeSlot;
-                let timeForSorting = 0;
+            // Create HTML for each time slot
+            timeSlots.forEach((slot, slotIndex) => {
+                let slotHtml = `
+                    <div class="time-slot">
+                        <div class="time-header">${slot.name}</div>
+                        <div class="time-content">
+                `;
 
-                if (timeMatch) {
-                    let hours = parseInt(timeMatch[1]);
-                    const minutes = parseInt(timeMatch[2]);
-                    const period = timeMatch[3].toUpperCase();
+                // Add medications for this slot
+                slot.meds.forEach((med, medIndex) => {
+                    const medId = `med-${slotIndex}-${medIndex}-${dateStr}`;
+                    const isChecked = savedMeds[medId] === true;
+                    const completedClass = isChecked ? 'medication completed' : 'medication';
 
-                    if (period === 'PM' && hours < 12) hours += 12;
-                    if (period === 'AM' && hours === 12) hours = 0;
-
-                    timeForSorting = hours * 60 + minutes;
-                }
-
-                // Check if this time slot is past or upcoming
-                const now = new Date();
-                const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
-                let timeStatus = '';
-
-                if (selectedDate.toDateString() === now.toDateString()) {
-                    if (timeForSorting < currentTimeInMinutes) {
-                        timeStatus = 'Past';
-                    } else if (timeForSorting - currentTimeInMinutes <= 30) {
-                        timeStatus = 'Upcoming';
-                    }
-                }
-
-                // Time slot header
-                const timeSlotHeader = document.createElement('div');
-                timeSlotHeader.className = 'time-slot-header';
-
-                // Add time status indicator if needed
-                if (timeStatus === 'Upcoming') {
-                    timeSlotHeader.className += ' upcoming';
-                }
-
-                if (timeStatus) {
-                    timeSlotHeader.innerHTML = `
-                        <span>${timeForDisplay}</span>
-                        <span>${timeStatus}</span>
-                    `;
-                } else {
-                    timeSlotHeader.innerHTML = `<span>${timeForDisplay}</span>`;
-                }
-
-                timeSlotElement.appendChild(timeSlotHeader);
-
-                // Time slot content (medications)
-                const timeSlotContent = document.createElement('div');
-                timeSlotContent.className = 'time-slot-content';
-
-                timeSlotData.medications.forEach(med => {
-                    const medicationElement = document.createElement('div');
-                    medicationElement.className = 'medication';
-
-                    // Create a safe ID for the medication
-                    const timeSlotId = createSafeId(timeSlotData.timeSlot);
-                    const medId = createSafeId(med.name);
-                    const elementId = `${timeSlotId}-${medId}-${dateString}`;
-
-                    // Create a storage key that includes the original time and medication name
-                    const storageKey = `${timeSlotData.timeSlot}-${med.name}-${dateString}`;
-
-                    const isTaken = takenMedications[storageKey] === true;
-
-                    if (isTaken) {
-                        medicationElement.classList.add('completed');
-                    }
-
-                    medicationElement.innerHTML = `
-                        <input type="checkbox" class="medication-checkbox" id="${elementId}" ${isTaken ? 'checked' : ''}>
-                        <div class="medication-info">
-                            <div class="medication-name">${med.name}</div>
-                            ${med.instructions ? `<div class="medication-instructions">${med.instructions}</div>` : ''}
+                    slotHtml += `
+                        <div class="${completedClass}" data-id="${medId}">
+                            <input type="checkbox" ${isChecked ? 'checked' : ''}>
+                            <div class="med-info">
+                                <div class="med-name">${med.name}</div>
+                                ${med.instructions ? `<div class="med-instructions">${med.instructions}</div>` : ''}
+                            </div>
                         </div>
                     `;
-
-                    timeSlotContent.appendChild(medicationElement);
-
-                    // Add event listeners
-                    const checkbox = medicationElement.querySelector(`#${elementId}`);
-                    const medInfo = medicationElement.querySelector('.medication-info');
-
-                    // Make medication row clickable
-                    medInfo.addEventListener('click', function() {
-                        checkbox.checked = !checkbox.checked;
-                        handleMedicationChange(checkbox, storageKey, med.name, medicationElement);
-                    });
-
-                    // Handle checkbox change
-                    checkbox.addEventListener('change', function() {
-                        handleMedicationChange(this, storageKey, med.name, medicationElement);
-                    });
                 });
 
-                timeSlotElement.appendChild(timeSlotContent);
-                medicationList.appendChild(timeSlotElement);
+                slotHtml += `
+                        </div>
+                    </div>
+                `;
+
+                medList.innerHTML += slotHtml;
+            });
+
+            // Add event listeners to checkboxes and med-info divs
+            document.querySelectorAll('.medication').forEach(medDiv => {
+                const checkbox = medDiv.querySelector('input[type="checkbox"]');
+                const medInfo = medDiv.querySelector('.med-info');
+                const medId = medDiv.getAttribute('data-id');
+                const medName = medDiv.querySelector('.med-name').textContent;
+
+                // Make the whole med-info clickable
+                medInfo.addEventListener('click', function() {
+                    checkbox.checked = !checkbox.checked;
+                    updateMedicationStatus(medDiv, medId, medName, checkbox.checked);
+                });
+
+                // Handle checkbox change
+                checkbox.addEventListener('change', function() {
+                    updateMedicationStatus(medDiv, medId, medName, this.checked);
+                });
             });
         }
 
-        // Handle medication checkbox changes
-        function handleMedicationChange(checkbox, storageKey, medicationName, element) {
+        // Update medication status
+        function updateMedicationStatus(medDiv, medId, medName, isChecked) {
+            const dateStr = selectedDate.toISOString().split('T')[0];
+
+            // Get saved medications
+            let savedMeds = {};
             try {
-                // Extract date string from storage key
-                const parts = storageKey.split('-');
-                const dateString = parts[parts.length - 1];
-
-                // Get stored data for this date
-                let takenMedications = {};
-                const stored = localStorage.getItem('taken_' + dateString);
-                if (stored) {
-                    takenMedications = JSON.parse(stored);
-                }
-
-                // Update data
-                takenMedications[storageKey] = checkbox.checked;
-                localStorage.setItem('taken_' + dateString, JSON.stringify(takenMedications));
-
-                // Update UI
-                if (checkbox.checked) {
-                    element.classList.add('completed');
-                    element.classList.add('pulse');
-                    showToast(medicationName + " marked as taken!");
-                } else {
-                    element.classList.remove('completed');
-                    element.classList.add('pulse');
-                    showToast(medicationName + " marked as not taken!");
-                }
-
-                // Remove animation class after animation completes
-                setTimeout(() => {
-                    element.classList.remove('pulse');
-                }, 300);
-
-                // Update stats if on stats page
-                if (!statsPage.classList.contains('hidden')) {
-                    updateStats();
+                const saved = localStorage.getItem('meds_' + dateStr);
+                if (saved) {
+                    savedMeds = JSON.parse(saved);
                 }
             } catch (e) {
-                console.error('Error saving medication state:', e);
-                showToast('Error saving: ' + e.message);
-            }
-        }
-
-        // Show toast notification
-        function showToast(message) {
-            toast.textContent = message;
-            toast.classList.add('show');
-
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
-        }
-
-        // Update stats
-        function updateStats() {
-            // Get today's date
-            const today = new Date();
-            const todayString = today.toISOString().split('T')[0];
-
-            // Count total medications and taken medications for today
-            let totalMeds = 0;
-            let takenMeds = 0;
-
-            // Get today's taken medications
-            const todayTakenMeds = JSON.parse(localStorage.getItem(`taken_${todayString}`)) || {};
-
-            // Count total medications for today
-            medicationData.forEach(timeSlot => {
-                timeSlot.medications.forEach(med => {
-                    totalMeds++;
-                    const storageKey = `${timeSlot.timeSlot}-${med.name}-${todayString}`;
-                    if (todayTakenMeds[storageKey]) {
-                        takenMeds++;
-                    }
-                });
-            });
-
-            // Update today's stats
-            const todayPercent = totalMeds > 0 ? Math.round((takenMeds / totalMeds) * 100) : 0;
-            todayPercentage.textContent = `${todayPercent}% (${takenMeds}/${totalMeds})`;
-            todayProgress.style.width = `${todayPercent}%`;
-
-            // Count weekly stats
-            let weeklyTotal = 0;
-            let weeklyTaken = 0;
-
-            // Get data for the past 7 days
-            for (let i = 0; i < 7; i++) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                const dateString = date.toISOString().split('T')[0];
-
-                // Count total medications for this day
-                const dayTotal = medicationData.reduce((sum, timeSlot) => sum + timeSlot.medications.length, 0);
-                weeklyTotal += dayTotal;
-
-                // Count taken medications for this day
-                const dateTakenMeds = JSON.parse(localStorage.getItem(`taken_${dateString}`)) || {};
-                weeklyTaken += Object.values(dateTakenMeds).filter(Boolean).length;
+                console.error("Error loading saved medications:", e);
             }
 
-            // Update weekly stats
-            const weeklyPercent = weeklyTotal > 0 ? Math.round((weeklyTaken / weeklyTotal) * 100) : 0;
-            weeklyPercentage.textContent = `${weeklyPercent}% (${weeklyTaken}/${weeklyTotal})`;
-            weeklyProgress.style.width = `${weeklyPercent}%`;
+            // Update status
+            savedMeds[medId] = isChecked;
 
-            // Calculate most missed medications
-            const missedMedsCount = {};
-
-            // Get data for the past 30 days
-            for (let i = 0; i < 30; i++) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                const dateString = date.toISOString().split('T')[0];
-                const dateTakenMeds = JSON.parse(localStorage.getItem(`taken_${dateString}`)) || {};
-
-                // Check each medication for this day
-                medicationData.forEach(timeSlot => {
-                    timeSlot.medications.forEach(med => {
-                        const storageKey = `${timeSlot.timeSlot}-${med.name}-${dateString}`;
-                        const medKey = `${timeSlot.timeSlot}-${med.name}`;
-
-                        // Initialize counter if needed
-                        if (!missedMedsCount[medKey]) {
-                            missedMedsCount[medKey] = { total: 0, missed: 0, name: med.name, time: timeSlot.timeSlot };
-                        }
-
-                        missedMedsCount[medKey].total++;
-
-                        if (!dateTakenMeds[storageKey]) {
-                            missedMedsCount[medKey].missed++;
-                        }
-                    });
-                });
+            // Save back to localStorage
+            try {
+                localStorage.setItem('meds_' + dateStr, JSON.stringify(savedMeds));
+            } catch (e) {
+                console.error("Error saving medications:", e);
+                showToast("Error saving: " + e.message);
+                return;
             }
 
-            // Sort by missed percentage
-            const sortedMissed = Object.values(missedMedsCount)
-                .filter(med => med.total > 0)
-                .map(med => ({
-                    ...med,
-                    missedPercent: Math.round((med.missed / med.total) * 100)
-                }))
-                .sort((a, b) => b.missedPercent - a.missedPercent)
-                .slice(0, 5); // Get top 5
-
-            // Update missed medications list
-            missedMedications.innerHTML = '';
-
-            if (sortedMissed.length > 0) {
-                sortedMissed.forEach(med => {
-                    const li = document.createElement('li');
-                    li.textContent = `${med.name} (${med.time}): Missed ${med.missedPercent}% of the time`;
-                    missedMedications.appendChild(li);
-                });
+            // Update UI
+            if (isChecked) {
+                medDiv.classList.add('completed');
+                showToast(medName + " marked as taken!");
             } else {
-                const li = document.createElement('li');
-                li.textContent = 'No missed medications data yet';
-                missedMedications.appendChild(li);
+                medDiv.classList.remove('completed');
+                showToast(medName + " marked as not taken!");
             }
         }
+
+        // Show toast message
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+
+            setTimeout(function() {
+                toast.style.display = 'none';
+            }, 2000);
+        }
+
+        // Date navigation
+        let selectedDate = new Date();
+
+        document.getElementById('prev-day').addEventListener('click', function() {
+            selectedDate.setDate(selectedDate.getDate() - 1);
+            updateDateDisplay();
+            createHardcodedMedicationList();
+        });
+
+        document.getElementById('next-day').addEventListener('click', function() {
+            selectedDate.setDate(selectedDate.getDate() + 1);
+            updateDateDisplay();
+            createHardcodedMedicationList();
+        });
+
+        function updateDateDisplay() {
+            const dateDisplay = document.getElementById('current-date');
+            const today = new Date();
+
+            if (selectedDate.toDateString() === today.toDateString()) {
+                dateDisplay.textContent = 'Today';
+            } else if (selectedDate.toDateString() === new Date(today.setDate(today.getDate() - 1)).toDateString()) {
+                dateDisplay.textContent = 'Yesterday';
+            } else if (selectedDate.toDateString() === new Date(new Date().setDate(new Date().getDate() + 1)).toDateString()) {
+                dateDisplay.textContent = 'Tomorrow';
+            } else {
+                const options = { weekday: 'long', month: 'short', day: 'numeric' };
+                dateDisplay.textContent = selectedDate.toLocaleDateString('en-US', options);
+            }
+        }
+
+        // Debug button
+        document.getElementById('debug-btn').addEventListener('click', function() {
+            const dateStr = selectedDate.toISOString().split('T')[0];
+            let debugInfo = "Debug Info:\n";
+            debugInfo += "- Date: " + dateStr + "\n";
+
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                debugInfo += "- localStorage working: Yes\n";
+
+                const saved = localStorage.getItem('meds_' + dateStr);
+                if (saved) {
+                    const savedMeds = JSON.parse(saved);
+                    const takenCount = Object.values(savedMeds).filter(Boolean).length;
+                    debugInfo += "- Medications taken today: " + takenCount + "\n";
+                } else {
+                    debugInfo += "- No medications tracked for this date\n";
+                }
+            } catch (e) {
+                debugInfo += "- localStorage error: " + e.message + "\n";
+            }
+
+            alert(debugInfo);
+        });
+
+        // Initialize
+        updateDateDisplay();
+        createHardcodedMedicationList();
+    </script>
+</body>
+</html>
